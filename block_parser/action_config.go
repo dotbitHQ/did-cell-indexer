@@ -1,0 +1,22 @@
+package block_parser
+
+import (
+	"fmt"
+	"github.com/dotbitHQ/das-lib/common"
+)
+
+func (b *BlockParser) ActionConfig(req FuncTransactionHandleReq) (resp FuncTransactionHandleResp) {
+	if isCV, err := isCurrentVersionTx(req.Tx, common.DasContractNameConfigCellType); err != nil {
+		resp.Err = fmt.Errorf("isCurrentVersion err: %s", err.Error())
+		return
+	} else if !isCV {
+		return
+	}
+
+	log.Info("ActionConfig:", req.TxHash)
+	if err := b.DasCore.AsyncDasConfigCell(); err != nil {
+		resp.Err = fmt.Errorf("AsyncDasConfigCell err: %s", err.Error())
+		return
+	}
+	return
+}
