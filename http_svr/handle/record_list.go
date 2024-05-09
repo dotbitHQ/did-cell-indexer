@@ -1,7 +1,6 @@
 package handle
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
 	"github.com/dotbitHQ/das-lib/http_api"
@@ -25,24 +24,6 @@ type RespAccountRecordsData struct {
 	Label string `json:"label"`
 	Value string `json:"value"`
 	Ttl   string `json:"ttl"`
-}
-
-func (h *HttpHandle) RpcAccountRecords(p json.RawMessage, apiResp *http_api.ApiResp) {
-	var req []ReqAccountRecords
-	err := json.Unmarshal(p, &req)
-	if err != nil {
-		log.Error("json.Unmarshal err:", err.Error())
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "params invalid")
-		return
-	} else if len(req) == 0 {
-		log.Error("len(req) is 0")
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "params invalid")
-		return
-	}
-
-	if err = h.doAccountRecords(&req[0], apiResp); err != nil {
-		log.Error("doVersion err:", err.Error())
-	}
 }
 
 func (h *HttpHandle) AccountRecords(ctx *gin.Context) {
