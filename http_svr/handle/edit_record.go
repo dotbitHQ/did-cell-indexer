@@ -1,16 +1,15 @@
 package handle
 
 import (
-	"github.com/nervosnetwork/ckb-sdk-go/address"
-	"github.com/nervosnetwork/ckb-sdk-go/indexer"
-
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
-	"github.com/dotbitHQ/das-lib/core"
 	"github.com/dotbitHQ/das-lib/http_api"
+	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/dotbitHQ/das-lib/witness"
 	"github.com/gin-gonic/gin"
+	"github.com/nervosnetwork/ckb-sdk-go/address"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 	"regexp"
@@ -96,16 +95,6 @@ func (h *HttpHandle) doEditRecords(req *ReqEditRecords, apiResp *http_api.ApiRes
 	if err := h.checkSystemUpgrade(apiResp); err != nil {
 		return fmt.Errorf("checkSystemUpgrade err: %s", err.Error())
 	}
-	//
-	//if ok := internal.IsLatestBlockNumber(config.Cfg.Server.ParserUrl); !ok {
-	//	apiResp.ApiRespErr(http_api.ApiCodeSyncBlockNumber, "sync block number")
-	//	return fmt.Errorf("sync block number")
-	//}
-
-	//if exi := h.RC.AccountLimitExist(req.Account); exi {
-	//	apiResp.ApiRespErr(http_api.ApiCodeOperationFrequent, "the operation is too frequent")
-	//	return fmt.Errorf("AccountActionLimitExist: %d %s %s", addressHex.ChainType, addressHex.AddressHex, req.Account)
-	//}
 
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
 	acc, err := h.DbDao.GetAccountInfoByAccountId(accountId)
@@ -118,6 +107,9 @@ func (h *HttpHandle) doEditRecords(req *ReqEditRecords, apiResp *http_api.ApiRes
 		return nil
 	} else if acc.IsExpired() {
 		apiResp.ApiRespErr(http_api.ApiCodeAccountIsExpired, "account is expired")
+		return nil
+	} else if bytes.Compare(common.Hex2Bytes(acc.Args), parseAddr.Script.Args) != 0 {
+		apiResp.ApiRespErr(http_api.ApiCodeNoAccountPermissions, "transfer account permission denied")
 		return nil
 	}
 	outpoint := common.String2OutPointStruct(acc.Outpoint)
@@ -173,29 +165,29 @@ func (h *HttpHandle) doEditRecords(req *ReqEditRecords, apiResp *http_api.ApiRes
 	}
 
 	//fee cell
-	_, liveBalanceCell, err := h.DasCore.GetBalanceCellWithLock(&core.ParamGetBalanceCells{
-		LockScript:   h.ServerScript,
-		CapacityNeed: 5000,
-		DasCache:     h.DasCache,
-		SearchOrder:  indexer.SearchOrderDesc,
+	//_, liveBalanceCell, err := h.DasCore.GetBalanceCellWithLock(&core.ParamGetBalanceCells{
+	//	LockScript:   h.ServerScript,
+	//	CapacityNeed: 5000,
+	//	DasCache:     h.DasCache,
+	//	SearchOrder:  indexer.SearchOrderDesc,
+	//})
+	//if err != nil {
+	//	log.Warnf("GetBalanceCell err %s", err.Error())
+	//	apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "GetBalanceCellWithLock error")
+	//
+	//	return fmt.Errorf("GetBalanceCell err %s", err.Error())
+	//}
+
+	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
+		DasCore:         h.DasCore,
+		DasCache:        h.DasCache,
+		Action:          common.DidCellActionEditRecords,
+		DidCellOutPoint: outpoint,
+
+		EditRecords: records,
 	})
 	if err != nil {
-		log.Warnf("GetBalanceCell err %s", err.Error())
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "GetBalanceCellWithLock error")
-
-		return fmt.Errorf("GetBalanceCell err %s", err.Error())
-	}
-
-	didCellTxParams := core.DidCellTxParams{
-		Action:            common.DidCellActionEditRecords,
-		DidCellOutPoint:   *outpoint,
-		EditRecords:       records,
-		EditOwnerLock:     parseAddr.Script,
-		NormalCkbLiveCell: liveBalanceCell,
-	}
-	txParam, err := h.DasCore.BuildDidCellTx(didCellTxParams)
-	if err != nil {
-		checkBuildTxErr(err, apiResp)
+		log.Error("txbuilder.BuildDidCellTx err : ", err.Error())
 		return fmt.Errorf("buildEditManagerTx err: %s", err.Error())
 	}
 	reqBuild := reqBuildTx{
@@ -203,13 +195,12 @@ func (h *HttpHandle) doEditRecords(req *ReqEditRecords, apiResp *http_api.ApiRes
 		Address: req.CkbAddr,
 		Account: acc.Account,
 	}
-	if si, err := h.buildTx(&reqBuild, txParam); err != nil {
+	if si, err := h.buildTx(&reqBuild, txParams); err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "build tx err")
 		return fmt.Errorf("buildTx: %s", err.Error())
 	} else {
 		resp.SignInfo = *si
 	}
-
 	apiResp.ApiRespOK(resp)
 	return nil
 }

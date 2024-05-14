@@ -58,7 +58,7 @@ func (d *DbDao) DidCellRenew(oldDidCellOutpoint string, didCellInfo tables.Table
 }
 
 func (d *DbDao) QueryDidCell(args string, didType tables.DidCellStatus) (didList []tables.TableDidCellInfo, err error) {
-	sql := d.parserDb.Where(" args= ?", args)
+	sql := d.db.Where(" args= ?", args)
 	if didType == tables.DidCellStatusNormal {
 		sql.Where("expired_at > ", time.Now().Unix())
 	} else if didType == tables.DidCellStatusExpired {
@@ -69,11 +69,11 @@ func (d *DbDao) QueryDidCell(args string, didType tables.DidCellStatus) (didList
 }
 
 func (d *DbDao) GetAccountInfoByAccountId(accountId string) (acc tables.TableDidCellInfo, err error) {
-	err = d.parserDb.Where(" account_id= ? ", accountId).Find(&acc).Error
+	err = d.db.Where(" account_id= ? ", accountId).Find(&acc).Error
 	return
 }
 
 func (d *DbDao) GetAccountInfoByOutpoint(outpoint string) (acc tables.TableDidCellInfo, err error) {
-	err = d.parserDb.Where(" outpoint= ? ", outpoint).Find(&acc).Error
+	err = d.db.Where(" outpoint= ? ", outpoint).Find(&acc).Error
 	return
 }

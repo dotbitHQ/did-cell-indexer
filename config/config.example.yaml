@@ -1,29 +1,21 @@
 server:
-  name: "dp-svr"
+  is_update: false
+  name: "did-indexer-svr"
   net: 2
   http_port: ":8132"
   http_port_internal: ":8133"
-  uni_pay_url: ""
   min_deposit_amount: "30"
-  refund_switch: true
-  transfer_whitelist: ""
-  transfer_whitelist_private: ""
-  capacity_whitelist: ""
-  capacity_whitelist_private: ""
-  split_count: 2
-  split_amount: 20000000
+  pay_server_address: ""
+  pay_private: ""
   remote_sign_api_url: ""
+  tx_fee_rate: 1
+
 db:
   mysql:
     addr: "127.0.0.1:3306"
     user: "root"
-    password: ""
-    db_name: "d_dp"
-  parser_mysql:
-    addr: "127.0.0.1:3306"
-    user: "root"
-    password: ""
-    db_name: "d_dp"
+    password: "123456"
+    db_name: "d_indexer"
   redis:
     addr: ""
     password: ""
@@ -31,12 +23,7 @@ db:
 chain:
   ckb:
     node: ""
-    current_block_number: 11195338 # testnet2 11195338
+    current_block_number: 11195338 #
     confirm_num: 4
     concurrency_num: 100
-unipay_address_map:
-  "evm": ""
-  "tron": ""
-stripe:
-  premium_percentage: ""
-  premium_base: ""
+

@@ -113,6 +113,17 @@ func (h *HttpHandle) buildTx(req *reqBuildTx, txParams *txbuilder.BuildTransacti
 	log.Info("buildTx tx fee:", req.Action, txFee, sizeInBlock, txFee)
 	var skipGroups []int
 
+	switch req.Action {
+	case common.DidCellActionRecycle:
+		changeCapacity := txBuilder.Transaction.Outputs[0].Capacity - txFee
+		txBuilder.Transaction.Outputs[0].Capacity = changeCapacity
+		log.Info("buildTx user:", req.Action, sizeInBlock, changeCapacity)
+	case common.DidCellActionEditRecords, common.DidCellActionEditOwner:
+		changeCapacity := txBuilder.Transaction.Outputs[0].Capacity - txFee
+		txBuilder.Transaction.Outputs[0].Capacity = changeCapacity
+		log.Info("buildTx user:", req.Action, sizeInBlock, changeCapacity)
+	}
+
 	signList, err := txBuilder.GenerateDigestListFromTx(skipGroups)
 	if err != nil {
 		return nil, fmt.Errorf("txBuilder.GenerateDigestListFromTx err: %s", err.Error())

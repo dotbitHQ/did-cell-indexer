@@ -1,0 +1,31 @@
+server:
+  is_update: false
+  name: "did-indexer-svr"
+  net: 2
+  http_port: ":8132"
+  http_port_internal: ":8133"
+  min_deposit_amount: "30"
+  pay_server_address: "ckt1qyqvsej8jggu4hmr45g4h8d9pfkpd0fayfksz44t9q"
+  pay_private: "b1d6770d6d9b9cd9d9d65e2b83d1353ca7c4e5a14d46ff139624a9b95b6e152c"
+  remote_sign_api_url: ""
+  tx_fee_rate: 1
+
+db:
+  mysql:
+    addr: "127.0.0.1:3306" # 172.17.0.1: docker 182.17.0.1: docker-compose
+    user: "root"
+    password: "123456"
+    db_name: "did_indexer"
+    max_open_conn: 100
+    max_idle_conn: 50
+  redis:
+    addr: "127.0.0.1:6379" # 172.17.0.1: docker 182.17.0.1: docker-compose
+    password: ""
+    db_num: 0
+chain:
+  ckb:
+    node: "https://testnet.ckb.dev"
+    current_block_number: 11195338 # testnet2 11195338
+    confirm_num: 4
+    concurrency_num: 100
+

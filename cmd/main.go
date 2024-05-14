@@ -71,7 +71,7 @@ func runServer(ctx *cli.Context) error {
 	prometheus.Tools.Run()
 
 	// db
-	dbDao, err := dao.NewGormDB(config.Cfg.DB.Mysql, config.Cfg.DB.ParserMysql)
+	dbDao, err := dao.NewGormDB(config.Cfg.DB.Mysql)
 	if err != nil {
 		return fmt.Errorf("dao.NewGormDB err: %s", err.Error())
 	}

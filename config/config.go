@@ -28,7 +28,7 @@ var (
 
 func InitCfg(configFilePath string) error {
 	if configFilePath == "" {
-		configFilePath = "./config/config.yaml"
+		configFilePath = "../config/config.yaml"
 	}
 	log.Debug("config file path：", configFilePath)
 	if err := toolib.UnmarshalYamlFile(configFilePath, &Cfg); err != nil {
@@ -41,7 +41,7 @@ func InitCfg(configFilePath string) error {
 
 func AddCfgFileWatcher(configFilePath string) (*fsnotify.Watcher, error) {
 	if configFilePath == "" {
-		configFilePath = "./config/config.yaml"
+		configFilePath = "../config/config.yaml"
 	}
 	return toolib.AddFileWatcher(configFilePath, func() {
 		log.Debug("config file path：", configFilePath)
@@ -54,26 +54,15 @@ func AddCfgFileWatcher(configFilePath string) (*fsnotify.Watcher, error) {
 
 type CfgServer struct {
 	Server struct {
-		IsUpdate                 bool              `json:"is_update" yaml:"is_update"`
-		Name                     string            `json:"name" yaml:"name"`
-		Net                      common.DasNetType `json:"net" yaml:"net"`
-		HttpPort                 string            `json:"http_port" yaml:"http_port"`
-		HttpPortInternal         string            `json:"http_port_internal" yaml:"http_port_internal"`
-		PayServerAddress         string            `json:"pay_server_address" yaml:"pay_server_address"`
-		PayPrivate               string            `json:"pay_private" yaml:"pay_private"`
-		UniPayUrl                string            `json:"uni_pay_url" yaml:"uni_pay_url"`
-		MinDepositAmount         decimal.Decimal   `json:"min_deposit_amount" yaml:"min_deposit_amount"`
-		MaxDepositAmount         decimal.Decimal   `json:"max_deposit_amount" yaml:"max_deposit_amount"`
-		RefundSwitch             bool              `json:"refund_switch" yaml:"refund_switch"`
-		TransferWhitelist        string            `json:"transfer_whitelist" yaml:"transfer_whitelist"`
-		TransferWhitelistPrivate string            `json:"transfer_whitelist_private" yaml:"transfer_whitelist_private"`
-		CapacityWhitelist        string            `json:"capacity_whitelist" yaml:"capacity_whitelist"`
-		CapacityWhitelistPrivate string            `json:"capacity_whitelist_private" yaml:"capacity_whitelist_private"`
-		SplitCount               int               `json:"split_count" yaml:"split_count"`
-		SplitAmount              decimal.Decimal   `json:"split_amount" yaml:"split_amount"`
-		RemoteSignApiUrl         string            `json:"remote_sign_api_url" yaml:"remote_sign_api_url"`
-		HedgeUrl                 string            `json:"hedge_url" yaml:"hedge_url"`
-		TxTeeRate                uint64            `json:"tx_fee_rate" yaml:"tx_fee_rate"`
+		IsUpdate         bool              `json:"is_update" yaml:"is_update"`
+		Name             string            `json:"name" yaml:"name"`
+		Net              common.DasNetType `json:"net" yaml:"net"`
+		HttpPort         string            `json:"http_port" yaml:"http_port"`
+		HttpPortInternal string            `json:"http_port_internal" yaml:"http_port_internal"`
+		PayServerAddress string            `json:"pay_server_address" yaml:"pay_server_address"`
+		PayPrivate       string            `json:"pay_private" yaml:"pay_private"`
+		RemoteSignApiUrl string            `json:"remote_sign_api_url" yaml:"remote_sign_api_url"`
+		TxTeeRate        uint64            `json:"tx_fee_rate" yaml:"tx_fee_rate"`
 	} `json:"server" yaml:"server"`
 	Origins []string `json:"origins" yaml:"origins"`
 	Notify  struct {
@@ -85,9 +74,8 @@ type CfgServer struct {
 		LarkStripeErrKey      string          `json:"lark_stripe_err_key" yaml:"lark_stripe_err_key"`
 	} `json:"notify" yaml:"notify"`
 	DB struct {
-		Mysql       DbMysql `json:"mysql" yaml:"mysql"`
-		ParserMysql DbMysql `json:"parser_mysql" yaml:"parser_mysql"`
-		Redis       struct {
+		Mysql DbMysql `json:"mysql" yaml:"mysql"`
+		Redis struct {
 			Addr     string `json:"addr" yaml:"addr"`
 			Password string `json:"password" yaml:"password"`
 			DbNum    int    `json:"db_num" yaml:"db_num"`
@@ -101,23 +89,12 @@ type CfgServer struct {
 			ConfirmNum         uint64 `json:"confirm_num" yaml:"confirm_num"`
 			ConcurrencyNum     uint64 `json:"concurrency_num" yaml:"concurrency_num"`
 		} `json:"ckb" yaml:"ckb"`
-		Tron    EvmNode `json:"tron" yaml:"tron"`
-		Eth     EvmNode `json:"eth" yaml:"eth"`
-		Bsc     EvmNode `json:"bsc" yaml:"bsc"`
-		Polygon EvmNode `json:"polygon" yaml:"polygon"`
 	} `json:"chain" yaml:"chain"`
 	Stripe struct {
 		PremiumPercentage decimal.Decimal `json:"premium_percentage" yaml:"premium_percentage"`
 		PremiumBase       decimal.Decimal `json:"premium_base" yaml:"premium_base"`
 		Key               string          `json:"key" yaml:"key"`
 	} `json:"stripe" yaml:"stripe"`
-}
-
-type EvmNode struct {
-	Node    string  `json:"node" yaml:"node"`
-	Addr    string  `json:"addr" yaml:"addr"`
-	Private string  `json:"private" yaml:"private"`
-	AddFee  float64 `json:"add_fee" yaml:"add_fee"`
 }
 
 type DbMysql struct {
