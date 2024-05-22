@@ -24,7 +24,7 @@ func (h *HttpHandle) Recycle(ctx *gin.Context) {
 	var (
 		funcName             = "Recycle"
 		clientIp, remoteAddr = GetClientIp(ctx)
-		req                  ReqTransfer
+		req                  ReqRecycle
 		apiResp              http_api.ApiResp
 		err                  error
 	)
@@ -37,14 +37,14 @@ func (h *HttpHandle) Recycle(ctx *gin.Context) {
 	}
 	log.Info("ApiReq:", funcName, clientIp, remoteAddr, toolib.JsonString(req))
 
-	if err = h.doTransfer(&req, &apiResp); err != nil {
+	if err = h.doRecycle(&req, &apiResp); err != nil {
 		log.Error("doTransfer err:", err.Error(), funcName, clientIp, remoteAddr)
 	}
 
 	ctx.JSON(http.StatusOK, apiResp)
 }
 
-func (h *HttpHandle) doRecycle(req *ReqTransfer, apiResp *http_api.ApiResp) error {
+func (h *HttpHandle) doRecycle(req *ReqRecycle, apiResp *http_api.ApiResp) error {
 	var resp RespTransfer
 	parseAddr, err := address.Parse(req.CkbAddr)
 	if err != nil {
@@ -54,8 +54,7 @@ func (h *HttpHandle) doRecycle(req *ReqTransfer, apiResp *http_api.ApiResp) erro
 	}
 	args := common.Bytes2Hex(parseAddr.Script.Args)
 
-	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
-	acc, err := h.DbDao.GetAccountInfoByOutpoint(accountId)
+	acc, err := h.DbDao.GetAccountInfoByOutpoint(req.Outpoint)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search account err")
 		return fmt.Errorf("SearchAccount err: %s", err.Error())

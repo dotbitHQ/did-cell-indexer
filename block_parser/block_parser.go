@@ -168,7 +168,9 @@ func (b *BlockParser) parsingBlockData(block *types.Block) error {
 		blockNumber := block.Header.Number
 		blockTimestamp := block.Header.Timestamp
 		if didCellAction, err := b.DasCore.TxToDidCellAction(tx); err != nil {
-			log.Error("TxToDidCellAction err :", didCellAction, blockNumber, txHash, err.Error())
+			if err != core.ErrorNotExistDidCell {
+				log.Error("TxToDidCellAction err :", didCellAction, blockNumber, txHash, err.Error())
+			}
 		} else {
 			if handle, ok := b.mapTransactionHandle[didCellAction]; ok {
 				// transaction parse by action

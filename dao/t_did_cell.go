@@ -60,9 +60,9 @@ func (d *DbDao) DidCellRenew(oldDidCellOutpoint string, didCellInfo tables.Table
 func (d *DbDao) QueryDidCell(args string, didType tables.DidCellStatus) (didList []tables.TableDidCellInfo, err error) {
 	sql := d.db.Where(" args= ?", args)
 	if didType == tables.DidCellStatusNormal {
-		sql.Where("expired_at > ", time.Now().Unix())
+		sql.Where("expired_at > ?", time.Now().Unix())
 	} else if didType == tables.DidCellStatusExpired {
-		sql.Where("expired_at <= ", time.Now().Unix())
+		sql.Where("expired_at <= ?", time.Now().Unix())
 	}
 	err = sql.Find(&didList).Error
 	return

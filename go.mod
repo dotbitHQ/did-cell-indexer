@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/dotbitHQ/das-lib v1.1.1-0.20240327062250-09dc024c5157
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/gin-gonic/gin v1.8.1
@@ -33,7 +34,6 @@ require (
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
-	github.com/ethereum/go-ethereum v1.10.26 // indirect
 	github.com/fbsobreira/gotron-sdk v0.0.0-20230323193002-7843d2a7548e // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
@@ -45,7 +45,6 @@ require (
 	github.com/goccy/go-json v0.9.11 // indirect
 	github.com/gogf/gf/v2 v2.3.3 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
@@ -61,7 +60,6 @@ require (
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
 	github.com/prometheus/common v0.0.0-20181113130724-41aa239b4cce // indirect
 	github.com/prometheus/procfs v0.0.0-20181005140218-185b4288413d // indirect
-	github.com/rjeczalik/notify v0.9.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/scorpiotzh/mylog v1.0.10 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect

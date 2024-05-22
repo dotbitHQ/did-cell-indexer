@@ -14,9 +14,8 @@ import (
 )
 
 type ReqTxSend struct {
-	SignKey     string               `json:"sign_key"`
-	SignAddress string               `json:"sign_address"`
-	SignList    []txbuilder.SignData `json:"sign_list"`
+	SignKey  string               `json:"sign_key"`
+	SignList []txbuilder.SignData `json:"sign_list"`
 }
 
 type RespTxSend struct {

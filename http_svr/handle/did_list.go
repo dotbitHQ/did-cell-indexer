@@ -14,8 +14,8 @@ import (
 )
 
 type ReqDidList struct {
-	CkbAddress string               `json:"ckb_address" binding:"required"`
-	DidType    tables.DidCellStatus `json:"did_type"`
+	CkbAddr string               `json:"ckb_addr" binding:"required"`
+	DidType tables.DidCellStatus `json:"did_type"`
 }
 
 type RespDidList struct {
@@ -58,7 +58,7 @@ func (h *HttpHandle) DidList(ctx *gin.Context) {
 func (h *HttpHandle) doDidList(ctx context.Context, req *ReqDidList, apiResp *http_api.ApiResp) error {
 	var resp RespDidList
 	data := make([]DidData, 0)
-	parseAddr, err := address.Parse(req.CkbAddress)
+	parseAddr, err := address.Parse(req.CkbAddr)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb address error")
 		log.Warnf("address.Parse err: %s", err.Error())

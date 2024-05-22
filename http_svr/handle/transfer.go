@@ -63,7 +63,8 @@ func (h *HttpHandle) doTransfer(req *ReqTransfer, apiResp *http_api.ApiResp) err
 		return fmt.Errorf("SearchAccount err: %s", err.Error())
 	}
 	if acc.Id == 0 {
-		apiResp.ApiRespOK(resp)
+		apiResp.ApiRespErr(http_api.ApiCodeAccountNotExist, "account not exist")
+
 		return nil
 	} else if acc.ExpiredAt <= uint64(time.Now().Unix()) {
 		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "account has expired")
@@ -80,22 +81,6 @@ func (h *HttpHandle) doTransfer(req *ReqTransfer, apiResp *http_api.ApiResp) err
 		log.Warnf("address.Parse err: %s", err.Error())
 		return fmt.Errorf("SearchAccountList err: %s", err.Error())
 	}
-	//receiveArgs := common.Bytes2Hex(receiveParseAddr.Script.Args)
-
-	//fee cell
-	//_, liveBalanceCell, err := h.DasCore.GetBalanceCellWithLock(&core.ParamGetBalanceCells{
-	//	LockScript:   h.ServerScript,
-	//	CapacityNeed: 5000,
-	//	DasCache:     h.DasCache,
-	//	SearchOrder:  indexer.SearchOrderDesc,
-	//})
-	//if err != nil {
-	//	log.Warnf("GetBalanceCell err %s", err.Error())
-	//	apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "GetBalanceCellWithLock error")
-	//
-	//	return fmt.Errorf("GetBalanceCell err %s", err.Error())
-	//}
-
 	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
@@ -116,6 +101,7 @@ func (h *HttpHandle) doTransfer(req *ReqTransfer, apiResp *http_api.ApiResp) err
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "build tx err")
 		return fmt.Errorf("buildTx: %s", err.Error())
 	} else {
+
 		resp.SignInfo = *si
 	}
 	apiResp.ApiRespOK(resp)

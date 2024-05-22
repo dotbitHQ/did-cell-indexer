@@ -114,6 +114,7 @@ func InitDasCore(ctx context.Context, wg *sync.WaitGroup) (*core.DasCore, *dasca
 
 	// das init
 	net := Cfg.Server.Net
+
 	env := core.InitEnvOpt(net,
 		common.DasContractNameConfigCellType,
 		common.DasContractNameDispatchCellType,
@@ -121,6 +122,8 @@ func InitDasCore(ctx context.Context, wg *sync.WaitGroup) (*core.DasCore, *dasca
 		common.DASContractNameEip712LibCellType,
 		common.DasContractNameDpCellType,
 		common.DasKeyListCellType,
+		common.DasContractNameDidCellType,
+		common.DasContractNameAlwaysSuccess,
 	)
 	ops := []core.DasCoreOption{
 		core.WithClient(ckbClient),

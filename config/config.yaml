@@ -5,8 +5,8 @@ server:
   http_port: ":8132"
   http_port_internal: ":8133"
   min_deposit_amount: "30"
-  pay_server_address: "ckt1qyqvsej8jggu4hmr45g4h8d9pfkpd0fayfksz44t9q"
-  pay_private: "b1d6770d6d9b9cd9d9d65e2b83d1353ca7c4e5a14d46ff139624a9b95b6e152c"
+  pay_server_address: "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq2fnngkdjt3wxrs8p0ww36f55pn0fxqyzccftufd"
+  pay_private: "0xf44390ed9d9d0a1be36bbe7ab3e74955266343c755a1c93c3dde29d0750b78dd"
   remote_sign_api_url: ""
   tx_fee_rate: 1
 
@@ -25,7 +25,7 @@ db:
 chain:
   ckb:
     node: "https://testnet.ckb.dev"
-    current_block_number: 11195338 # testnet2 11195338
+    current_block_number: 13329905 # testnet2 11195338
     confirm_num: 4
     concurrency_num: 100
 
