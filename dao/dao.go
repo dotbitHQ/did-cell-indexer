@@ -13,7 +13,6 @@ type DbDao struct {
 }
 
 func NewGormDB(dbMysql config.DbMysql) (*DbDao, error) {
-	fmt.Println(11111, dbMysql.Addr)
 	db, err := http_api.NewGormDB(dbMysql.Addr, dbMysql.User, dbMysql.Password, dbMysql.DbName, 100, 100)
 	if err != nil {
 		return nil, fmt.Errorf("http_api.NewGormDB err: %s", err.Error())

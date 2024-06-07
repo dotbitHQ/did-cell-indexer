@@ -3,13 +3,10 @@ server:
   name: "did-indexer-svr"
   net: 2
   http_port: ":8132"
-  http_port_internal: ":8133"
-  min_deposit_amount: "30"
   pay_server_address: "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq2fnngkdjt3wxrs8p0ww36f55pn0fxqyzccftufd"
   pay_private: "0xf44390ed9d9d0a1be36bbe7ab3e74955266343c755a1c93c3dde29d0750b78dd"
   remote_sign_api_url: ""
   tx_fee_rate: 1
-
 db:
   mysql:
     addr: "127.0.0.1:3306" # 172.17.0.1: docker 182.17.0.1: docker-compose

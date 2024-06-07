@@ -19,15 +19,10 @@ type HttpSvr struct {
 	Address string
 	engine  *gin.Engine
 	srv     *http.Server
-
-	InternalAddress string
-	internalEngine  *gin.Engine
-	internalSrv     *http.Server
 }
 
 func (h *HttpSvr) Run() {
 	h.engine = gin.New()
-	h.internalEngine = gin.New()
 	h.initRouter()
 
 	h.srv = &http.Server{
@@ -39,17 +34,6 @@ func (h *HttpSvr) Run() {
 			log.Error("ListenAndServe err:", err)
 		}
 	}()
-
-	h.internalSrv = &http.Server{
-		Addr:    h.InternalAddress,
-		Handler: h.internalEngine,
-	}
-	go func() {
-		if err := h.internalSrv.ListenAndServe(); err != nil {
-			log.Error("http_server internal run err:", err)
-		}
-	}()
-
 }
 
 func (h *HttpSvr) Shutdown() {
@@ -57,9 +41,6 @@ func (h *HttpSvr) Shutdown() {
 		log.Warn("HttpSvr Shutdown ... ")
 		if err := h.srv.Shutdown(h.Ctx); err != nil {
 			log.Error("Shutdown 1 err:", err.Error())
-		}
-		if err := h.internalSrv.Shutdown(h.Ctx); err != nil {
-			log.Error("Shutdown 2 err:", err.Error())
 		}
 	}
 }

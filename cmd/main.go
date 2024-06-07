@@ -114,9 +114,8 @@ func runServer(ctx *cli.Context) error {
 
 	// http
 	httpSvr := http_svr.HttpSvr{
-		Ctx:             ctxServer,
-		Address:         config.Cfg.Server.HttpPort,
-		InternalAddress: config.Cfg.Server.HttpPortInternal,
+		Ctx:     ctxServer,
+		Address: config.Cfg.Server.HttpPort,
 		H: &handle.HttpHandle{
 			Ctx:           ctxServer,
 			DbDao:         dbDao,

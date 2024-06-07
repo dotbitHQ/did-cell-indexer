@@ -58,7 +58,6 @@ type CfgServer struct {
 		Name             string            `json:"name" yaml:"name"`
 		Net              common.DasNetType `json:"net" yaml:"net"`
 		HttpPort         string            `json:"http_port" yaml:"http_port"`
-		HttpPortInternal string            `json:"http_port_internal" yaml:"http_port_internal"`
 		PayServerAddress string            `json:"pay_server_address" yaml:"pay_server_address"`
 		PayPrivate       string            `json:"pay_private" yaml:"pay_private"`
 		RemoteSignApiUrl string            `json:"remote_sign_api_url" yaml:"remote_sign_api_url"`
