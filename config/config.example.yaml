@@ -2,7 +2,7 @@ server:
   is_update: false
   name: "did-indexer-svr"
   net: 2
-  http_port: ":8132"
+  http_port: ":9132"
   pay_server_address: ""
   pay_private: ""
   remote_sign_api_url: ""

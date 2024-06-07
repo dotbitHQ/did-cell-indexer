@@ -169,7 +169,7 @@ func (b *BlockParser) parsingBlockData(block *types.Block) error {
 		blockTimestamp := block.Header.Timestamp
 		if didCellAction, err := b.DasCore.TxToDidCellAction(tx); err != nil {
 			if err != core.ErrorNotExistDidCell {
-				log.Error("TxToDidCellAction err :", didCellAction, blockNumber, txHash, err.Error())
+				log.Warn("TxToDidCellAction err :", didCellAction, blockNumber, txHash, err.Error())
 			}
 		} else {
 			if handle, ok := b.mapTransactionHandle[didCellAction]; ok {
