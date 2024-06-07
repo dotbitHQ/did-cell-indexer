@@ -1,13 +1,13 @@
 package handle
 
 import (
+	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/gin-gonic/gin"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
-	"time"
 )
 
 type ReqRecordList struct {
@@ -60,10 +60,12 @@ func (h *HttpHandle) doRecordList(req *ReqRecordList, apiResp *http_api.ApiResp)
 		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search account err")
 		return fmt.Errorf("SearchAccount err: %s", err.Error())
 	}
+
+	recycleAt := tables.GetDidCellRecycleExpiredAt()
 	if acc.Id == 0 {
 		apiResp.ApiRespOK(resp)
 		return nil
-	} else if acc.ExpiredAt <= uint64(time.Now().Unix()) {
+	} else if acc.ExpiredAt <= recycleAt {
 		apiResp.ApiRespOK(resp)
 		return nil
 	}
