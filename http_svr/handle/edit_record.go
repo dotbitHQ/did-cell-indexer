@@ -2,14 +2,16 @@ package handle
 
 import (
 	"bytes"
+	"did-cell-indexer/config"
 	"encoding/json"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
+	"github.com/dotbitHQ/das-lib/core"
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/dotbitHQ/das-lib/witness"
 	"github.com/gin-gonic/gin"
-	"github.com/nervosnetwork/ckb-sdk-go/address"
+	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 	"regexp"
@@ -18,11 +20,9 @@ import (
 )
 
 type ReqEditRecord struct {
-	CkbAddr  string `json:"ckb_addr" binding:"required" `
-	Account  string `json:"account" binding:"required" binding:"required"`
-	RawParam struct {
-		Records []ReqRecord `json:"records"`
-	} `json:"raw_param" binding:"required"`
+	core.ChainTypeAddress
+	Account string      `json:"account" binding:"required"`
+	Records []ReqRecord `json:"records"`
 }
 
 type ReqRecord struct {
@@ -81,26 +81,27 @@ func (h *HttpHandle) EditRecord(ctx *gin.Context) {
 
 func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp) error {
 	var resp RespEditRecord
-	parseAddr, err := address.Parse(req.CkbAddr)
+
+	addrHex, err := req.FormatChainTypeAddress(config.Cfg.Server.Net, true)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb_addr error")
-		log.Warnf("address.Parse err: %s", err.Error())
-		return fmt.Errorf("SearchAccountList err: %s", err.Error())
-	}
-	//args := common.Bytes2Hex(parseAddr.Script.Args)
-	if req.Account == "" {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "account is invalid")
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
+		return fmt.Errorf("FormatChainTypeAddress err: %s", err.Error())
+	} else if addrHex.DasAlgorithmId != common.DasAlgorithmIdAnyLock {
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
 		return nil
 	}
+
 	if err := h.checkSystemUpgrade(apiResp); err != nil {
 		return fmt.Errorf("checkSystemUpgrade err: %s", err.Error())
 	}
 
+	var didCellOutPoint *types.OutPoint
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
+
 	acc, err := h.DbDao.GetAccountInfoByAccountId(accountId)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search account err")
-		return fmt.Errorf("SearchAccount err: %s", err.Error())
+		return fmt.Errorf("GetAccountInfoByAccountId err: %s", err.Error())
 	}
 	if acc.Id == 0 {
 		apiResp.ApiRespErr(http_api.ApiCodeAccountNotExist, "account not exist")
@@ -108,24 +109,26 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 	} else if acc.IsExpired() {
 		apiResp.ApiRespErr(http_api.ApiCodeAccountIsExpired, "account is expired")
 		return nil
-	} else if bytes.Compare(common.Hex2Bytes(acc.Args), parseAddr.Script.Args) != 0 {
-		apiResp.ApiRespErr(http_api.ApiCodeNoAccountPermissions, "transfer account permission denied")
+	} else if bytes.Compare(common.Hex2Bytes(acc.Args), addrHex.ParsedAddress.Script.Args) != 0 {
+		apiResp.ApiRespErr(http_api.ApiCodeNoAccountPermissions, "edit record permission denied")
 		return nil
 	}
-	outpoint := common.String2OutPointStruct(acc.Outpoint)
-	var records []witness.Record
+
+	// check records
 	builder, err := h.DasCore.ConfigCellDataBuilderByTypeArgsList(common.ConfigCellTypeArgsRecordNamespace)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, err.Error())
 		return fmt.Errorf("ConfigCellDataBuilderByTypeArgsList err: %s", err.Error())
 	}
 	log.Info("ConfigCellRecordKeys:", builder.ConfigCellRecordKeys)
+
 	var mapRecordKey = make(map[string]struct{})
 	for _, v := range builder.ConfigCellRecordKeys {
 		mapRecordKey[v] = struct{}{}
 	}
 
-	for _, v := range req.RawParam.Records {
+	var editRecords []witness.Record
+	for _, v := range req.Records {
 		record := fmt.Sprintf("%s.%s", v.Type, v.Key)
 		if v.Type == "custom_key" { // (^[0-9a-z_]+$)
 			if ok, _ := regexp.MatchString("^[0-9a-z_]+$", v.Key); !ok {
@@ -147,7 +150,7 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 		if err != nil {
 			ttl = 300
 		}
-		records = append(records, witness.Record{
+		editRecords = append(editRecords, witness.Record{
 			Key:   v.Key,
 			Type:  v.Type,
 			Label: v.Label,
@@ -156,7 +159,7 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 		})
 	}
 
-	recordsMolecule := witness.ConvertToCellRecords(records)
+	recordsMolecule := witness.ConvertToCellRecords(editRecords)
 	recordsBys := recordsMolecule.AsSlice()
 	log.Info("doEditRecord recordsBys:", len(recordsBys))
 	if len(recordsBys) >= 5000 {
@@ -164,27 +167,12 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 		return nil
 	}
 
-	//fee cell
-	//_, liveBalanceCell, err := h.DasCore.GetBalanceCellWithLock(&core.ParamGetBalanceCells{
-	//	LockScript:   h.ServerScript,
-	//	CapacityNeed: 5000,
-	//	DasCache:     h.DasCache,
-	//	SearchOrder:  indexer.SearchOrderDesc,
-	//})
-	//if err != nil {
-	//	log.Warnf("GetBalanceCell err %s", err.Error())
-	//	apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "GetBalanceCellWithLock error")
-	//
-	//	return fmt.Errorf("GetBalanceCell err %s", err.Error())
-	//}
-
 	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
 		Action:          common.DidCellActionEditRecords,
-		DidCellOutPoint: outpoint,
-
-		EditRecords: records,
+		DidCellOutPoint: didCellOutPoint,
+		EditRecords:     editRecords,
 	})
 	if err != nil {
 		log.Error("txbuilder.BuildDidCellTx err : ", err.Error())
@@ -192,7 +180,7 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 	}
 	reqBuild := reqBuildTx{
 		Action:  common.DidCellActionEditRecords,
-		Address: req.CkbAddr,
+		Address: req.KeyInfo.Key,
 		Account: acc.Account,
 	}
 	if si, err := h.buildTx(&reqBuild, txParams); err != nil {

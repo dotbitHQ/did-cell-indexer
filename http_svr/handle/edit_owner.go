@@ -17,7 +17,7 @@ import (
 
 type ReqEditOwner struct {
 	core.ChainTypeAddress
-	Account        string `json:"account"`
+	Account        string `json:"account" binding:"required"`
 	ReceiveCkbAddr string `json:"receive_ckb_addr" binding:"required"`
 }
 

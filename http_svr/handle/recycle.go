@@ -1,19 +1,21 @@
 package handle
 
 import (
+	"did-cell-indexer/config"
+	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
+	"github.com/dotbitHQ/das-lib/core"
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/gin-gonic/gin"
-	"github.com/nervosnetwork/ckb-sdk-go/address"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 )
 
 type ReqRecycle struct {
-	Outpoint string `json:"outpoint" binding:"required"`
-	CkbAddr  string `json:"ckb_addr" binding:"required" `
+	core.ChainTypeAddress
+	Account string `json:"account" binding:"required"`
 }
 
 type RespRecycle struct {
@@ -46,75 +48,49 @@ func (h *HttpHandle) Recycle(ctx *gin.Context) {
 
 func (h *HttpHandle) doRecycle(req *ReqRecycle, apiResp *http_api.ApiResp) error {
 	var resp RespRecycle
-	parseAddr, err := address.Parse(req.CkbAddr)
+
+	addrHex, err := req.FormatChainTypeAddress(config.Cfg.Server.Net, true)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb_addr error")
-		log.Warnf("address.Parse err: %s", err.Error())
-		return fmt.Errorf("SearchAccountList err: %s", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
+		return fmt.Errorf("FormatChainTypeAddress err: %s", err.Error())
+	} else if addrHex.DasAlgorithmId != common.DasAlgorithmIdAnyLock {
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
+		return nil
 	}
-	args := common.Bytes2Hex(parseAddr.Script.Args)
+	args := common.Bytes2Hex(addrHex.ParsedAddress.Script.Args)
+	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
 
-	acc, err := h.DbDao.GetAccountInfoByOutpoint(req.Outpoint)
+	didAccount, err := h.DbDao.GetAccountInfoForRecycle(accountId, args)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search account err")
-		return fmt.Errorf("SearchAccount err: %s", err.Error())
-	}
-	if acc.Id == 0 {
-		apiResp.ApiRespOK(resp)
-		return nil
-	} else if acc.IsExpired() {
-		apiResp.ApiRespErr(http_api.ApiCodeAccountIsExpired, "account has expired")
-		return nil
-	} else if acc.Args != args {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "no permission")
+		apiResp.ApiRespErr(http_api.ApiCodeDbError, "Failed to get did account info")
+		return fmt.Errorf("GetAccountInfoForRecycle err: %s", err.Error())
+	} else if didAccount.Id == 0 {
+		apiResp.ApiRespErr(http_api.ApiCodeAccountNotExist, "account not exist")
 		return nil
 	}
-	outpoint := common.String2OutPointStruct(acc.Outpoint)
 
-	//todo api code and  完整 log
+	expiredAt := tables.GetDidCellRecycleExpiredAt()
+	if didAccount.ExpiredAt > expiredAt {
+		apiResp.ApiRespErr(http_api.ApiCodeNotYetDueForRecycle, "not yet due for recycle")
+		return nil
+	}
 
-	//receiveArgs := common.Bytes2Hex(receiveParseAddr.Script.Args)
-
-	//fee cell
-	//_, liveBalanceCell, err := h.DasCore.GetBalanceCellWithLock(&core.ParamGetBalanceCells{
-	//	LockScript:   h.ServerScript,
-	//	CapacityNeed: 5000,
-	//	DasCache:     h.DasCache,
-	//	SearchOrder:  indexer.SearchOrderDesc,
-	//})
-	//if err != nil {
-	//	log.Warnf("GetBalanceCell err %s", err.Error())
-	//	apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "GetBalanceCellWithLock error")
-	//
-	//	return fmt.Errorf("GetBalanceCell err %s", err.Error())
-	//}
-
-	//var didCellTxParams core.DidCellTxParams
-	//didCellTxParams.Action = common.DidCellActionRecycle
-	//didCellTxParams.DidCellOutPoint = *outpoint
-	//didCellTxParams.NormalCkbLiveCell = liveBalanceCell
-	//
-	//txParam, err := h.DasCore.BuildDidCellTx(didCellTxParams)
-	//
-	//if err != nil {
-	//	apiResp.ApiRespErr(http_api.ApiCodeError500, "build tx err")
-	//	return fmt.Errorf("BuildDidCellTx err: %s", err.Error())
-	//}
-
+	didCellOutpoint := common.String2OutPointStruct(didAccount.Outpoint)
 	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
 		Action:          common.DidCellActionRecycle,
-		DidCellOutPoint: outpoint,
+		DidCellOutPoint: didCellOutpoint,
 	})
 	if err != nil {
-		log.Error("txbuilder.BuildDidCellTx err : ", err.Error())
-		return fmt.Errorf("buildEditManagerTx err: %s", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeError500, "Failed to build recycle tx")
+		return fmt.Errorf("BuildDidCellTx err: %s", err.Error())
 	}
+
 	reqBuild := reqBuildTx{
 		Action:  common.DidCellActionRecycle,
-		Address: req.CkbAddr,
-		Account: acc.Account,
+		Address: req.KeyInfo.Key,
+		Account: req.Account,
 	}
 	if si, err := h.buildTx(&reqBuild, txParams); err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "build tx err")

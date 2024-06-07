@@ -105,6 +105,12 @@ func (d *DbDao) GetAccountInfoByAccountId(accountId string) (acc tables.TableDid
 	return
 }
 
+func (d *DbDao) GetAccountInfoForRecycle(accountId, args string) (acc tables.TableDidCellInfo, err error) {
+	err = d.db.Where(" account_id= ? AND args=?", accountId, args).
+		Order("expired_at").Limit(1).Find(&acc).Error
+	return
+}
+
 func (d *DbDao) GetAccountInfoByOutpoint(outpoint string) (acc tables.TableDidCellInfo, err error) {
 	err = d.db.Where(" outpoint= ? ", outpoint).Find(&acc).Error
 	return
