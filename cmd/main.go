@@ -49,6 +49,7 @@ func main() {
 func runServer(ctx *cli.Context) error {
 	// config file
 	configFilePath := ctx.String("config")
+	log.Info("configFilePath:", configFilePath)
 	if err := config.InitCfg(configFilePath); err != nil {
 		return err
 	}
@@ -71,6 +72,7 @@ func runServer(ctx *cli.Context) error {
 	prometheus.Tools.Run()
 
 	// db
+	log.Info("config.Cfg.DB.Mysql:", config.Cfg.DB.Mysql)
 	dbDao, err := dao.NewGormDB(config.Cfg.DB.Mysql)
 	if err != nil {
 		return fmt.Errorf("dao.NewGormDB err: %s", err.Error())

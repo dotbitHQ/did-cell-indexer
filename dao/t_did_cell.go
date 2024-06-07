@@ -12,7 +12,8 @@ func (d *DbDao) AccountUpgrade(didCellInfo tables.TableDidCellInfo) error {
 
 func (d *DbDao) CreateDidCellRecordsInfos(outpoint string, didCellInfo tables.TableDidCellInfo, recordsInfos []tables.TableRecordsInfo) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("account_id = ?", didCellInfo.AccountId).Delete(&tables.TableRecordsInfo{}).Error; err != nil {
+		if err := tx.Where("account_id = ?", didCellInfo.AccountId).
+			Delete(&tables.TableRecordsInfo{}).Error; err != nil {
 			return err
 		}
 		if len(recordsInfos) > 0 {
@@ -29,24 +30,39 @@ func (d *DbDao) CreateDidCellRecordsInfos(outpoint string, didCellInfo tables.Ta
 	})
 }
 
-func (d *DbDao) EditDidCellOwner(outpoint string, didCellInfo tables.TableDidCellInfo) error {
+func (d *DbDao) EditDidCellOwner(oldOutpoint string, didCellInfo tables.TableDidCellInfo, recordsInfos []tables.TableRecordsInfo) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Select("outpoint", "block_number", "args", "lock_code_hash").
-			Where("outpoint = ?", outpoint).
-			Updates(didCellInfo).Error; err != nil {
+		if oldOutpoint != "" {
+			if err := tx.Where("outpoint=?", oldOutpoint).
+				Delete(tables.TableDidCellInfo{}).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Create(&didCellInfo).Error; err != nil {
 			return err
 		}
-		return nil
+		if err := tx.Where("account_id = ?", didCellInfo.AccountId).
+			Delete(&tables.TableRecordsInfo{}).Error; err != nil {
+			return err
+		}
 
+		if len(recordsInfos) > 0 {
+			if err := tx.Create(&recordsInfos).Error; err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 
-func (d *DbDao) DidCellRecycle(outpoint string, accountId string) error {
+func (d *DbDao) DidCellRecycle(oldOutpoint string, accountId string) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("account_id=?", accountId).Delete(&tables.TableRecordsInfo{}).Error; err != nil {
+		if err := tx.Where("account_id=?", accountId).
+			Delete(&tables.TableRecordsInfo{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("outpoint = ? ", outpoint).Delete(&tables.TableRecordsInfo{}).Error; err != nil {
+		if err := tx.Where("outpoint = ? ", oldOutpoint).
+			Delete(&tables.TableDidCellInfo{}).Error; err != nil {
 			return err
 		}
 		return nil

@@ -4,9 +4,7 @@ import (
 	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
-
 	"github.com/dotbitHQ/das-lib/witness"
-
 	"strconv"
 )
 
@@ -20,12 +18,6 @@ func (b *BlockParser) ActionAccountUpgrade(req FuncTransactionHandleReq) (resp F
 	}
 	log.Info("ActionAccountCrossChain:", req.BlockNumber, req.TxHash, req.Action)
 
-	builder, err := witness.AccountCellDataBuilderFromTx(req.Tx, common.DataTypeNew)
-	if err != nil {
-		resp.Err = fmt.Errorf("AccountCellDataBuilderFromTx err: %s", err.Error())
-		return
-	}
-
 	didEntity, err := witness.TxToOneDidEntity(req.Tx, witness.SourceTypeOutputs)
 	if err != nil {
 		resp.Err = fmt.Errorf("TxToOneDidEntity err: %s", err.Error())
@@ -33,15 +25,24 @@ func (b *BlockParser) ActionAccountUpgrade(req FuncTransactionHandleReq) (resp F
 	}
 	didCellArgs := common.Bytes2Hex(req.Tx.Outputs[didEntity.Target.Index].Lock.Args)
 
+	account, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[didEntity.Target.Index])
+	if err != nil {
+		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
+		return
+	}
+	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
+
 	didCellInfo := tables.TableDidCellInfo{
-		BlockNumber: req.BlockNumber,
-		Outpoint:    common.OutPoint2String(req.TxHash, 0),
-		AccountId:   builder.AccountId,
-		Args:        didCellArgs,
+		BlockNumber:  req.BlockNumber,
+		Outpoint:     common.OutPoint2String(req.TxHash, 0),
+		AccountId:    accountId,
+		Account:      account,
+		Args:         didCellArgs,
+		LockCodeHash: req.Tx.Outputs[didEntity.Target.Index].Lock.CodeHash.Hex(),
+		ExpiredAt:    expiredAt,
 	}
 
 	if err = b.DbDao.AccountUpgrade(didCellInfo); err != nil {
-		log.Error("AccountCrossChain err:", err.Error(), req.TxHash, req.BlockNumber)
 		resp.Err = fmt.Errorf("AccountCrossChain err: %s ", err.Error())
 		return
 	}
@@ -61,41 +62,42 @@ func (b *BlockParser) ActionEditDidCellRecords(req FuncTransactionHandleReq) (re
 
 	txDidEntity, err := witness.TxToDidEntity(req.Tx)
 	if err != nil {
-		resp.Err = fmt.Errorf("witness.TxToDidEntity err: %s", err.Error())
+		resp.Err = fmt.Errorf("TxToDidEntity err: %s", err.Error())
 		return
 	}
 
-	var didCellData witness.DidCellData
-	if err := didCellData.BysToObj(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index]); err != nil {
-		resp.Err = fmt.Errorf("didCellData.BysToObj err: %s", err.Error())
+	account, _, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	if err != nil {
+		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
 		return
 	}
-
-	var recordsInfos []tables.TableRecordsInfo
-	account := didCellData.Account
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
-	recordList := txDidEntity.Outputs[0].DidCellWitnessDataV0.Records
-	for _, v := range recordList {
-		recordsInfos = append(recordsInfos, tables.TableRecordsInfo{
-			AccountId: accountId,
-			Account:   account,
-			Key:       v.Key,
-			Type:      v.Type,
-			Label:     v.Label,
-			Value:     v.Value,
-			Ttl:       strconv.FormatUint(uint64(v.TTL), 10),
-		})
-	}
 	log.Info("ActionEditDidRecords:", account)
 
-	oldDidCellOutpoint := common.OutPointStruct2String(req.Tx.Inputs[txDidEntity.Inputs[0].Target.Index].PreviousOutput)
+	var recordsInfos []tables.TableRecordsInfo
+	for _, v := range txDidEntity.Outputs[0].DidCellWitnessDataV0.Records {
+		recordsInfos = append(recordsInfos, tables.TableRecordsInfo{
+			AccountId:       accountId,
+			ParentAccountId: "",
+			Account:         account,
+			Key:             v.Key,
+			Type:            v.Type,
+			Label:           v.Label,
+			Value:           v.Value,
+			Ttl:             strconv.FormatUint(uint64(v.TTL), 10),
+		})
+	}
+
+	oldOutpoint := common.OutPointStruct2String(req.Tx.Inputs[txDidEntity.Inputs[0].Target.Index].PreviousOutput)
+
 	var didCellInfo tables.TableDidCellInfo
 	didCellInfo.AccountId = accountId
 	didCellInfo.BlockNumber = req.BlockNumber
 	didCellInfo.Outpoint = common.OutPoint2String(req.Tx.Hash.Hex(), uint(txDidEntity.Outputs[0].Target.Index))
-	if err := b.DbDao.CreateDidCellRecordsInfos(oldDidCellOutpoint, didCellInfo, recordsInfos); err != nil {
-		log.Error("CreateDidCellRecordsInfos err:", err.Error())
+
+	if err := b.DbDao.CreateDidCellRecordsInfos(oldOutpoint, didCellInfo, recordsInfos); err != nil {
 		resp.Err = fmt.Errorf("CreateDidCellRecordsInfos err: %s", err.Error())
+		return
 	}
 
 	return
@@ -110,31 +112,53 @@ func (b *BlockParser) ActionEditDidCellOwner(req FuncTransactionHandleReq) (resp
 		return
 	}
 	log.Info("ActionEditDidCellOwner:", req.BlockNumber, req.TxHash, req.Action)
-	didEntity, err := witness.TxToOneDidEntity(req.Tx, witness.SourceTypeOutputs)
+
+	txDidEntity, err := witness.TxToDidEntity(req.Tx)
 	if err != nil {
-		resp.Err = fmt.Errorf("TxToOneDidEntity err: %s", err.Error())
+		resp.Err = fmt.Errorf("TxToDidEntity err: %s", err.Error())
 		return
 	}
-	var didCellData witness.DidCellData
-	if err := didCellData.BysToObj(req.Tx.OutputsData[didEntity.Target.Index]); err != nil {
-		resp.Err = fmt.Errorf("didCellData.BysToObj err: %s", err.Error())
+
+	account, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	if err != nil {
+		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
 		return
 	}
-	didCellArgs := common.Bytes2Hex(req.Tx.Outputs[didEntity.Target.Index].Lock.Args)
-	account := didCellData.Account
+
+	didCellArgs := common.Bytes2Hex(req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.Args)
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
 	didCellInfo := tables.TableDidCellInfo{
 		BlockNumber:  req.BlockNumber,
-		Outpoint:     common.OutPoint2String(req.TxHash, uint(didEntity.Target.Index)),
+		Outpoint:     common.OutPoint2String(req.TxHash, uint(txDidEntity.Outputs[0].Target.Index)),
 		AccountId:    accountId,
+		Account:      account,
 		Args:         didCellArgs,
-		LockCodeHash: req.Tx.Outputs[didEntity.Target.Index].Lock.CodeHash.Hex(),
+		LockCodeHash: req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.CodeHash.Hex(),
+		ExpiredAt:    expiredAt,
 	}
 
-	oldOutpoint := common.OutPointStruct2String(req.Tx.Inputs[0].PreviousOutput)
-	if err := b.DbDao.EditDidCellOwner(oldOutpoint, didCellInfo); err != nil {
-		log.Error("EditDidCellOwner err:", err.Error())
+	var recordsInfos []tables.TableRecordsInfo
+	for _, v := range txDidEntity.Outputs[0].DidCellWitnessDataV0.Records {
+		recordsInfos = append(recordsInfos, tables.TableRecordsInfo{
+			AccountId:       accountId,
+			ParentAccountId: "",
+			Account:         account,
+			Key:             v.Key,
+			Type:            v.Type,
+			Label:           v.Label,
+			Value:           v.Value,
+			Ttl:             strconv.FormatUint(uint64(v.TTL), 10),
+		})
+	}
+
+	var oldOutpoint string
+	if len(txDidEntity.Inputs) > 0 {
+		oldOutpoint = common.OutPointStruct2String(req.Tx.Inputs[txDidEntity.Inputs[0].Target.Index].PreviousOutput)
+	}
+
+	if err := b.DbDao.EditDidCellOwner(oldOutpoint, didCellInfo, recordsInfos); err != nil {
 		resp.Err = fmt.Errorf("EditDidCellOwner err: %s", err.Error())
+		return
 	}
 	return
 }
@@ -189,6 +213,7 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 		resp.Err = fmt.Errorf("TxToOneDidEntity err: %s", err.Error())
 		return
 	}
+
 	preTx, err := b.DasCore.Client().GetTransaction(b.Ctx, req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.TxHash)
 	if err != nil {
 		resp.Err = fmt.Errorf("GetTransaction err: %s", err.Error())
@@ -203,20 +228,41 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 		return
 	}
 	log.Info("ActionDidCellRecycle:", req.BlockNumber, req.TxHash, req.Action)
-	preTxDidEntity, err := witness.TxToOneDidEntity(preTx.Transaction, witness.SourceTypeOutputs)
 
-	var preDidCellData witness.DidCellData
-	if err := preDidCellData.BysToObj(preTx.Transaction.OutputsData[preTxDidEntity.Target.Index]); err != nil {
-		resp.Err = fmt.Errorf("didCellData.BysToObj err: %s", err.Error())
+	account, _, err := getAccAntExpire(preTx.Transaction.OutputsData[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index])
+	if err != nil {
+		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
 		return
 	}
-	account := preDidCellData.Account
+
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
-	oldOutpoint := common.OutPointStruct2String(req.Tx.Inputs[0].PreviousOutput)
+	oldOutpoint := common.OutPointStruct2String(req.Tx.Inputs[didEntity.Target.Index].PreviousOutput)
+
 	if err := b.DbDao.DidCellRecycle(oldOutpoint, accountId); err != nil {
-		log.Error("DidCellRecycle err:", err.Error())
 		resp.Err = fmt.Errorf("DidCellRecycle err: %s", err.Error())
+		return
 	}
 	return
 
+}
+
+func getAccAntExpire(bys []byte) (string, uint64, error) {
+	account := ""
+	expiredAt := uint64(0)
+
+	sporeData, didCellData, err := witness.BysToDidCellData(bys)
+	if err != nil {
+		return "", 0, fmt.Errorf("BysToDidCellData err: %s", err.Error())
+	} else if sporeData != nil {
+		didCellDataLV, err := sporeData.ContentToDidCellDataLV()
+		if err != nil {
+			return "", 0, fmt.Errorf("ContentToDidCellDataLV err: %s", err.Error())
+		}
+		account = didCellDataLV.Account
+		expiredAt = didCellDataLV.ExpireAt
+	} else if didCellData != nil {
+		account = didCellData.Account
+		expiredAt = didCellData.ExpireAt
+	}
+	return account, expiredAt, nil
 }
