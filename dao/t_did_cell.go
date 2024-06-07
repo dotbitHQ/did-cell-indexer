@@ -100,7 +100,8 @@ func (d *DbDao) QueryDidCellTotal(args, keyword string, didType tables.DidCellSt
 }
 
 func (d *DbDao) GetAccountInfoByAccountId(accountId string) (acc tables.TableDidCellInfo, err error) {
-	err = d.db.Where(" account_id= ? ", accountId).Find(&acc).Error
+	err = d.db.Where(" account_id= ? ", accountId).
+		Order("expired_at DESC").Limit(1).Find(&acc).Error
 	return
 }
 

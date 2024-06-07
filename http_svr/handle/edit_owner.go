@@ -1,20 +1,23 @@
 package handle
 
 import (
+	"bytes"
+	"did-cell-indexer/config"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
+	"github.com/dotbitHQ/das-lib/core"
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/gin-gonic/gin"
-	"github.com/nervosnetwork/ckb-sdk-go/address"
+	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
-	"time"
+	"strings"
 )
 
 type ReqEditOwner struct {
-	Account        string `json:"account" binding:"required"`
-	CkbAddr        string `json:"ckb_addr" binding:"required" `
+	core.ChainTypeAddress
+	Account        string `json:"account"`
 	ReceiveCkbAddr string `json:"receive_ckb_addr" binding:"required"`
 }
 
@@ -48,60 +51,81 @@ func (h *HttpHandle) EditOwner(ctx *gin.Context) {
 
 func (h *HttpHandle) doEditOwner(req *ReqEditOwner, apiResp *http_api.ApiResp) error {
 	var resp RespEditOwner
-	parseAddr, err := address.Parse(req.CkbAddr)
+
+	addrHexFrom, err := req.FormatChainTypeAddress(config.Cfg.Server.Net, true)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb_addr error")
-		log.Warnf("address.Parse err: %s", err.Error())
-		return fmt.Errorf("SearchAccountList err: %s", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address is invalid")
+		return fmt.Errorf("FormatChainTypeAddress err: %s", err.Error())
+	} else if addrHexFrom.DasAlgorithmId != common.DasAlgorithmIdAnyLock {
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
+		return nil
 	}
-	args := common.Bytes2Hex(parseAddr.Script.Args)
+
+	toCTA := core.ChainTypeAddress{
+		Type: "blockchain",
+		KeyInfo: core.KeyInfo{
+			CoinType: common.CoinTypeCKB,
+			Key:      req.ReceiveCkbAddr,
+		},
+	}
+	addrHexTo, err := toCTA.FormatChainTypeAddress(config.Cfg.Server.Net, true)
+	if err != nil {
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "receiver address is invalid")
+		return fmt.Errorf("FormatChainTypeAddress err: %s", err.Error())
+	} else if addrHexTo.DasAlgorithmId != common.DasAlgorithmIdAnyLock {
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "receiver address is invalid")
+		return nil
+	}
+	editOwnerLock := addrHexTo.ParsedAddress.Script
+
+	if strings.EqualFold(req.KeyInfo.Key, req.ReceiveCkbAddr) {
+		apiResp.ApiRespErr(http_api.ApiCodeSameLock, "same owner address")
+		return nil
+	}
 
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
+	if err := h.checkSystemUpgrade(apiResp); err != nil {
+		return fmt.Errorf("checkSystemUpgrade err: %s", err.Error())
+	}
+
+	var didCellOutPoint *types.OutPoint
+
 	acc, err := h.DbDao.GetAccountInfoByAccountId(accountId)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search account err")
-		return fmt.Errorf("SearchAccount err: %s", err.Error())
-	}
-	if acc.Id == 0 {
+		apiResp.ApiRespErr(http_api.ApiCodeDbError, "Failed to get account info")
+		return fmt.Errorf("GetAccountInfoByAccountId err: %s", err.Error())
+	} else if acc.Id == 0 {
 		apiResp.ApiRespErr(http_api.ApiCodeAccountNotExist, "account not exist")
+		return nil
+	} else if acc.IsExpired() {
+		apiResp.ApiRespErr(http_api.ApiCodeAccountIsExpired, "account expired")
+		return nil
+	} else if bytes.Compare(common.Hex2Bytes(acc.Args), addrHexFrom.ParsedAddress.Script.Args) != 0 {
+		apiResp.ApiRespErr(http_api.ApiCodeNoAccountPermissions, "transfer account permission denied")
+		return nil
+	}
 
-		return nil
-	} else if acc.ExpiredAt <= uint64(time.Now().Unix()) {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "account has expired")
-		return nil
-	} else if acc.Args != args {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "no permission")
-		return nil
-	}
-	outpoint := common.String2OutPointStruct(acc.Outpoint)
-	//todo api code and  完整 log
-	receiveParseAddr, err := address.Parse(req.ReceiveCkbAddr)
-	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "receive_ckb_addr error")
-		log.Warnf("address.Parse err: %s", err.Error())
-		return fmt.Errorf("SearchAccountList err: %s", err.Error())
-	}
 	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
 		Action:          common.DidCellActionEditOwner,
-		DidCellOutPoint: outpoint,
-		EditOwnerLock:   receiveParseAddr.Script,
+		DidCellOutPoint: didCellOutPoint,
+		EditOwnerLock:   editOwnerLock,
 	})
 	if err != nil {
-		log.Error("txbuilder.BuildDidCellTx err : ", err.Error())
-		return fmt.Errorf("buildEditManagerTx err: %s", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeError500, "Failed to build tx")
+		return fmt.Errorf("BuildDidCellTx err: %s", err.Error())
 	}
+
 	reqBuild := reqBuildTx{
 		Action:  common.DidCellActionEditOwner,
-		Address: req.CkbAddr,
+		Address: req.KeyInfo.Key,
 		Account: acc.Account,
 	}
 	if si, err := h.buildTx(&reqBuild, txParams); err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "build tx err")
 		return fmt.Errorf("buildTx: %s", err.Error())
 	} else {
-
 		resp.SignInfo = *si
 	}
 	apiResp.ApiRespOK(resp)

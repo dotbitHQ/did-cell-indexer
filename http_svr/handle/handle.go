@@ -62,28 +62,6 @@ func (h *HttpHandle) checkSystemUpgrade(apiResp *http_api.ApiResp) error {
 		apiResp.ApiRespErr(http_api.ApiCodeSystemUpgrade, http_api.TextSystemUpgrade)
 		return nil
 	}
-	ConfigCellDataBuilder, err := h.DasCore.ConfigCellDataBuilderByTypeArgs(common.ConfigCellTypeArgsMain)
-	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeError500, err.Error())
-		return fmt.Errorf("ConfigCellDataBuilderByTypeArgs err: %s", err.Error())
-	}
-	status, err := ConfigCellDataBuilder.Status()
-	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeError500, err.Error())
-		return fmt.Errorf("ConfigCellDataBuilderByTypeArgs err: %s", err.Error())
-	}
-	if status != 1 {
-		apiResp.ApiRespErr(http_api.ApiCodeSystemUpgrade, http_api.TextSystemUpgrade)
-		return nil
-	}
-	//ok, err := h.DasCore.CheckContractStatusOK(common.DasContractNameDpCellType)
-	//if err != nil {
-	//	apiResp.ApiRespErr(http_api.ApiCodeError500, err.Error())
-	//	return fmt.Errorf("CheckContractStatusOK err: %s", err.Error())
-	//} else if !ok {
-	//	apiResp.ApiRespErr(http_api.ApiCodeSystemUpgrade, http_api.TextSystemUpgrade)
-	//	return nil
-	//}
 	return nil
 }
 
@@ -96,6 +74,7 @@ type SignInfo struct {
 	SignKey     string               `json:"sign_key"`               // sign tx key
 	SignAddress string               `json:"sign_address,omitempty"` // sign address
 	SignList    []txbuilder.SignData `json:"sign_list"`              // sign list
+	CKBTx       string               `json:"ckb_tx"`
 }
 
 func (h *HttpHandle) buildTx(req *reqBuildTx, txParams *txbuilder.BuildTransactionParams) (*SignInfo, error) {
@@ -129,7 +108,8 @@ func (h *HttpHandle) buildTx(req *reqBuildTx, txParams *txbuilder.BuildTransacti
 		return nil, fmt.Errorf("txBuilder.GenerateDigestListFromTx err: %s", err.Error())
 	}
 
-	log.Info("buildTx:", txBuilder.TxString())
+	txStr := txBuilder.TxString()
+	log.Info("buildTx:", txStr)
 
 	var sic cache.SignInfoCache
 	sic.Action = req.Action
@@ -145,6 +125,7 @@ func (h *HttpHandle) buildTx(req *reqBuildTx, txParams *txbuilder.BuildTransacti
 	var si SignInfo
 	si.SignKey = signKey
 	si.SignList = signList
+	si.CKBTx = txStr
 
 	return &si, nil
 }
