@@ -13,12 +13,12 @@ import (
 	"time"
 )
 
-type ReqDidList struct {
+type ReqAccountList struct {
 	CkbAddr string               `json:"ckb_addr" binding:"required"`
 	DidType tables.DidCellStatus `json:"did_type"`
 }
 
-type RespDidList struct {
+type RespAccountList struct {
 	List []DidData `json:"did_list"`
 }
 
@@ -31,11 +31,11 @@ type DidData struct {
 	DidCellStatus tables.DidCellStatus `json:"did_cell_status"`
 }
 
-func (h *HttpHandle) DidList(ctx *gin.Context) {
+func (h *HttpHandle) AccountList(ctx *gin.Context) {
 	var (
-		funcName             = "DidList"
+		funcName             = "AccountList"
 		clientIp, remoteAddr = GetClientIp(ctx)
-		req                  ReqDidList
+		req                  ReqAccountList
 		apiResp              http_api.ApiResp
 		err                  error
 	)
@@ -48,15 +48,15 @@ func (h *HttpHandle) DidList(ctx *gin.Context) {
 	}
 	log.Info("ApiReq:", funcName, clientIp, remoteAddr, toolib.JsonString(req))
 
-	if err = h.doDidList(ctx, &req, &apiResp); err != nil {
-		log.Error(ctx, "doDidList err:", err.Error(), funcName, clientIp, remoteAddr)
+	if err = h.doAccountList(ctx, &req, &apiResp); err != nil {
+		log.Error(ctx, "doAccountList err:", err.Error(), funcName, clientIp, remoteAddr)
 	}
 
 	ctx.JSON(http.StatusOK, apiResp)
 }
 
-func (h *HttpHandle) doDidList(ctx context.Context, req *ReqDidList, apiResp *http_api.ApiResp) error {
-	var resp RespDidList
+func (h *HttpHandle) doAccountList(ctx context.Context, req *ReqAccountList, apiResp *http_api.ApiResp) error {
+	var resp RespAccountList
 	data := make([]DidData, 0)
 	parseAddr, err := address.Parse(req.CkbAddr)
 	if err != nil {

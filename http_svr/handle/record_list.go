@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-type ReqAccountRecords struct {
+type ReqRecordList struct {
 	Account string `json:"account"`
 }
 
-type RespAccountRecords struct {
-	Records []RespAccountRecordsData `json:"records"`
+type RespRecordList struct {
+	Records []RespRecordListData `json:"records"`
 }
 
-type RespAccountRecordsData struct {
+type RespRecordListData struct {
 	Key   string `json:"key"`
 	Type  string `json:"type"`
 	Label string `json:"label"`
@@ -26,11 +26,11 @@ type RespAccountRecordsData struct {
 	Ttl   string `json:"ttl"`
 }
 
-func (h *HttpHandle) AccountRecords(ctx *gin.Context) {
+func (h *HttpHandle) RecordList(ctx *gin.Context) {
 	var (
-		funcName             = "AccountRecords"
+		funcName             = "RecordList"
 		clientIp, remoteAddr = GetClientIp(ctx)
-		req                  ReqAccountRecords
+		req                  ReqRecordList
 		apiResp              http_api.ApiResp
 		err                  error
 	)
@@ -43,16 +43,16 @@ func (h *HttpHandle) AccountRecords(ctx *gin.Context) {
 	}
 	log.Info("ApiReq:", funcName, clientIp, toolib.JsonString(req), ctx)
 
-	if err = h.doAccountRecords(&req, &apiResp); err != nil {
-		log.Error("doAccountRecords err:", err.Error(), funcName, clientIp, ctx)
+	if err = h.doRecordList(&req, &apiResp); err != nil {
+		log.Error("doRecordList err:", err.Error(), funcName, clientIp, ctx)
 	}
 
 	ctx.JSON(http.StatusOK, apiResp)
 }
 
-func (h *HttpHandle) doAccountRecords(req *ReqAccountRecords, apiResp *http_api.ApiResp) error {
-	var resp RespAccountRecords
-	resp.Records = make([]RespAccountRecordsData, 0)
+func (h *HttpHandle) doRecordList(req *ReqRecordList, apiResp *http_api.ApiResp) error {
+	var resp RespRecordList
+	resp.Records = make([]RespRecordListData, 0)
 
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
 	acc, err := h.DbDao.GetAccountInfoByAccountId(accountId)
@@ -74,7 +74,7 @@ func (h *HttpHandle) doAccountRecords(req *ReqAccountRecords, apiResp *http_api.
 		return fmt.Errorf("SearchRecordsByAccount err: %s", err.Error())
 	}
 	for _, v := range list {
-		resp.Records = append(resp.Records, RespAccountRecordsData{
+		resp.Records = append(resp.Records, RespRecordListData{
 			Key:   v.Key,
 			Type:  v.Type,
 			Label: v.Label,

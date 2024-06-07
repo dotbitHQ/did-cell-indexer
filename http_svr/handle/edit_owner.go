@@ -12,21 +12,21 @@ import (
 	"time"
 )
 
-type ReqTransfer struct {
+type ReqEditOwner struct {
 	Account        string `json:"account" binding:"required"`
 	CkbAddr        string `json:"ckb_addr" binding:"required" `
 	ReceiveCkbAddr string `json:"receive_ckb_addr" binding:"required"`
 }
 
-type RespTransfer struct {
+type RespEditOwner struct {
 	SignInfo
 }
 
-func (h *HttpHandle) Transfer(ctx *gin.Context) {
+func (h *HttpHandle) EditOwner(ctx *gin.Context) {
 	var (
-		funcName             = "Transfer"
+		funcName             = "EditOwner"
 		clientIp, remoteAddr = GetClientIp(ctx)
-		req                  ReqTransfer
+		req                  ReqEditOwner
 		apiResp              http_api.ApiResp
 		err                  error
 	)
@@ -39,15 +39,15 @@ func (h *HttpHandle) Transfer(ctx *gin.Context) {
 	}
 	log.Info("ApiReq:", funcName, clientIp, remoteAddr, toolib.JsonString(req))
 
-	if err = h.doTransfer(&req, &apiResp); err != nil {
-		log.Error("doTransfer err:", err.Error(), funcName, clientIp, remoteAddr)
+	if err = h.doEditOwner(&req, &apiResp); err != nil {
+		log.Error("doEditOwner err:", err.Error(), funcName, clientIp, remoteAddr)
 	}
 
 	ctx.JSON(http.StatusOK, apiResp)
 }
 
-func (h *HttpHandle) doTransfer(req *ReqTransfer, apiResp *http_api.ApiResp) error {
-	var resp RespTransfer
+func (h *HttpHandle) doEditOwner(req *ReqEditOwner, apiResp *http_api.ApiResp) error {
+	var resp RespEditOwner
 	parseAddr, err := address.Parse(req.CkbAddr)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb_addr error")

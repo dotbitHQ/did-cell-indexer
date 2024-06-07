@@ -28,11 +28,11 @@ func (h *HttpSvr) initRouter() {
 		//longExpireTime, longDataTime := time.Second*15, time.Minute*10
 		//cacheHandleLong := toolib.MiddlewareCacheByRedis(h.rc.GetRedisClient(), false, longDataTime, lockTime, longExpireTime, respHandle)
 		//cacheHandleShortCookies := toolib.MiddlewareCacheByRedis(h.rc.GetRedisClient(), true, shortDataTime, lockTime, shortExpireTime, respHandle)
-		v1.POST("/did/list", DoMonitorLog("did_list"), cacheHandleShort, h.H.DidList)               //
-		v1.POST("/record/list", DoMonitorLog("records_list"), cacheHandleShort, h.H.AccountRecords) //
+		v1.POST("/account/list", DoMonitorLog("account_list"), cacheHandleShort, h.H.AccountList) //
+		v1.POST("/record/list", DoMonitorLog("record_list"), cacheHandleShort, h.H.RecordList)    //
 		// operate
-		v1.POST("/transfer", DoMonitorLog("transfer"), h.H.Transfer)
-		v1.POST("/edit/record", DoMonitorLog("edit_record"), h.H.EditRecords)
+		v1.POST("/edit/owner", DoMonitorLog("edit_owner"), h.H.EditOwner)
+		v1.POST("/edit/record", DoMonitorLog("edit_record"), h.H.EditRecord)
 		v1.POST("/recycle", DoMonitorLog("recycle"), h.H.Recycle)
 		v1.POST("/tx/send", DoMonitorLog("tx_send"), h.H.TxSend)
 

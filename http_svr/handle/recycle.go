@@ -45,7 +45,7 @@ func (h *HttpHandle) Recycle(ctx *gin.Context) {
 }
 
 func (h *HttpHandle) doRecycle(req *ReqRecycle, apiResp *http_api.ApiResp) error {
-	var resp RespTransfer
+	var resp RespRecycle
 	parseAddr, err := address.Parse(req.CkbAddr)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb_addr error")

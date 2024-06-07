@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-type ReqEditRecords struct {
+type ReqEditRecord struct {
 	CkbAddr  string `json:"ckb_addr" binding:"required" `
 	Account  string `json:"account" binding:"required" binding:"required"`
 	RawParam struct {
@@ -33,12 +33,12 @@ type ReqRecord struct {
 	TTL   string `json:"ttl"`
 }
 
-type RespEditRecords struct {
+type RespEditRecord struct {
 	SignInfo
 }
 
-func (h *HttpHandle) RpcEditRecords(p json.RawMessage, apiResp *http_api.ApiResp) {
-	var req []ReqEditRecords
+func (h *HttpHandle) RpcEditRecord(p json.RawMessage, apiResp *http_api.ApiResp) {
+	var req []ReqEditRecord
 	err := json.Unmarshal(p, &req)
 	if err != nil {
 		log.Error("json.Unmarshal err:", err.Error())
@@ -50,16 +50,16 @@ func (h *HttpHandle) RpcEditRecords(p json.RawMessage, apiResp *http_api.ApiResp
 		return
 	}
 
-	if err = h.doEditRecords(&req[0], apiResp); err != nil {
-		log.Error("doEditRecords err:", err.Error())
+	if err = h.doEditRecord(&req[0], apiResp); err != nil {
+		log.Error("doEditRecord err:", err.Error())
 	}
 }
 
-func (h *HttpHandle) EditRecords(ctx *gin.Context) {
+func (h *HttpHandle) EditRecord(ctx *gin.Context) {
 	var (
-		funcName             = "EditRecords"
+		funcName             = "EditRecord"
 		clientIp, remoteAddr = GetClientIp(ctx)
-		req                  ReqEditRecords
+		req                  ReqEditRecord
 		apiResp              http_api.ApiResp
 		err                  error
 	)
@@ -72,15 +72,15 @@ func (h *HttpHandle) EditRecords(ctx *gin.Context) {
 	}
 	log.Info("ApiReq:", funcName, clientIp, toolib.JsonString(req), ctx)
 
-	if err = h.doEditRecords(&req, &apiResp); err != nil {
-		log.Error("doEditRecords err:", err.Error(), funcName, clientIp, ctx)
+	if err = h.doEditRecord(&req, &apiResp); err != nil {
+		log.Error("doEditRecord err:", err.Error(), funcName, clientIp, ctx)
 	}
 
 	ctx.JSON(http.StatusOK, apiResp)
 }
 
-func (h *HttpHandle) doEditRecords(req *ReqEditRecords, apiResp *http_api.ApiResp) error {
-	var resp RespEditRecords
+func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp) error {
+	var resp RespEditRecord
 	parseAddr, err := address.Parse(req.CkbAddr)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb_addr error")
@@ -158,7 +158,7 @@ func (h *HttpHandle) doEditRecords(req *ReqEditRecords, apiResp *http_api.ApiRes
 
 	recordsMolecule := witness.ConvertToCellRecords(records)
 	recordsBys := recordsMolecule.AsSlice()
-	log.Info("doEditRecords recordsBys:", len(recordsBys))
+	log.Info("doEditRecord recordsBys:", len(recordsBys))
 	if len(recordsBys) >= 5000 {
 		apiResp.ApiRespErr(http_api.ApiCodeTooManyRecords, "too many records")
 		return nil
