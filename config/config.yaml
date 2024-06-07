@@ -3,8 +3,8 @@ server:
   name: "did-indexer-svr"
   net: 2
   http_port: ":8132"
-  pay_server_address: "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsq2fnngkdjt3wxrs8p0ww36f55pn0fxqyzccftufd"
-  pay_private: "0xf44390ed9d9d0a1be36bbe7ab3e74955266343c755a1c93c3dde29d0750b78dd"
+  pay_server_address: ""
+  pay_private: ""
   remote_sign_api_url: ""
   tx_fee_rate: 1
 db:
@@ -13,8 +13,6 @@ db:
     user: "root"
     password: "123456"
     db_name: "did_indexer"
-    max_open_conn: 100
-    max_idle_conn: 50
   redis:
     addr: "127.0.0.1:6379" # 172.17.0.1: docker 182.17.0.1: docker-compose
     password: ""
@@ -22,7 +20,7 @@ db:
 chain:
   ckb:
     node: "https://testnet.ckb.dev"
-    current_block_number: 13329905 # testnet2 11195338
+    current_block_number: 13184725 # testnet2 13184725
     confirm_num: 4
     concurrency_num: 100
 

@@ -15,8 +15,6 @@ import (
 	"github.com/nervosnetwork/ckb-sdk-go/rpc"
 	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"github.com/scorpiotzh/toolib"
-	"github.com/shopspring/decimal"
-	"github.com/stripe/stripe-go/v74"
 	"sync"
 	"time"
 )
@@ -34,7 +32,6 @@ func InitCfg(configFilePath string) error {
 	if err := toolib.UnmarshalYamlFile(configFilePath, &Cfg); err != nil {
 		return fmt.Errorf("UnmarshalYamlFile err:%s", err.Error())
 	}
-	initStripe()
 	log.Debug("config file：", toolib.JsonString(Cfg))
 	return nil
 }
@@ -65,12 +62,9 @@ type CfgServer struct {
 	} `json:"server" yaml:"server"`
 	Origins []string `json:"origins" yaml:"origins"`
 	Notify  struct {
-		MinBalance            decimal.Decimal `json:"min_balance" yaml:"min_balance"`
-		SentryDsn             string          `json:"sentry_dsn" yaml:"sentry_dsn"`
-		LarkKey               string          `json:"lark_key" yaml:"lark_key"`
-		LarkErrKey            string          `json:"lark_err_key" yaml:"lark_err_key"`
-		PrometheusPushGateway string          `json:"prometheus_push_gateway" yaml:"prometheus_push_gateway"`
-		LarkStripeErrKey      string          `json:"lark_stripe_err_key" yaml:"lark_stripe_err_key"`
+		SentryDsn             string `json:"sentry_dsn" yaml:"sentry_dsn"`
+		LarkErrKey            string `json:"lark_err_key" yaml:"lark_err_key"`
+		PrometheusPushGateway string `json:"prometheus_push_gateway" yaml:"prometheus_push_gateway"`
 	} `json:"notify" yaml:"notify"`
 	DB struct {
 		Mysql DbMysql `json:"mysql" yaml:"mysql"`
@@ -89,11 +83,6 @@ type CfgServer struct {
 			ConcurrencyNum     uint64 `json:"concurrency_num" yaml:"concurrency_num"`
 		} `json:"ckb" yaml:"ckb"`
 	} `json:"chain" yaml:"chain"`
-	Stripe struct {
-		PremiumPercentage decimal.Decimal `json:"premium_percentage" yaml:"premium_percentage"`
-		PremiumBase       decimal.Decimal `json:"premium_base" yaml:"premium_base"`
-		Key               string          `json:"key" yaml:"key"`
-	} `json:"stripe" yaml:"stripe"`
 }
 
 type DbMysql struct {
@@ -117,10 +106,10 @@ func InitDasCore(ctx context.Context, wg *sync.WaitGroup) (*core.DasCore, *dasca
 	env := core.InitEnvOpt(net,
 		common.DasContractNameConfigCellType,
 		common.DasContractNameDispatchCellType,
-		common.DasContractNameBalanceCellType,
+		//common.DasContractNameBalanceCellType,
 		common.DASContractNameEip712LibCellType,
-		common.DasContractNameDpCellType,
-		common.DasKeyListCellType,
+		//common.DasContractNameDpCellType,
+		//common.DasKeyListCellType,
 		common.DasContractNameDidCellType,
 		common.DasContractNameAlwaysSuccess,
 	)
@@ -148,7 +137,6 @@ func InitDasCore(ctx context.Context, wg *sync.WaitGroup) (*core.DasCore, *dasca
 	// das cache
 	dasCache := dascache.NewDasCache(ctx, wg)
 	dasCache.RunClearExpiredOutPoint(time.Minute * 15)
-	dasCache.AddBlockOutPoint([]string{"0xa7e780250f5db774f2fcae028e7b6f44bb6e7b04ed8b2cb1beb6f4f7e969295c-0"})
 	log.Info("das cache ok")
 	return dasCore, dasCache, nil
 }
@@ -181,7 +169,4 @@ func InitTxBuilder(ctx context.Context, dasCore *core.DasCore) (*txbuilder.DasTx
 	log.Info("tx builder ok")
 
 	return txBuilderBase, serverScript, nil
-}
-func initStripe() {
-	stripe.Key = Cfg.Stripe.Key
 }
