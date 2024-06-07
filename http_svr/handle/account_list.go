@@ -2,24 +2,28 @@ package handle
 
 import (
 	"context"
+	"did-cell-indexer/config"
 	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
+	"github.com/dotbitHQ/das-lib/core"
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/gin-gonic/gin"
-	"github.com/nervosnetwork/ckb-sdk-go/address"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 	"time"
 )
 
 type ReqAccountList struct {
-	CkbAddr string               `json:"ckb_addr" binding:"required"`
+	core.ChainTypeAddress
+	Pagination
+	Keyword string               `json:"keyword"`
 	DidType tables.DidCellStatus `json:"did_type"`
 }
 
 type RespAccountList struct {
-	List []DidData `json:"did_list"`
+	Total int64     `json:"total"`
+	List  []DidData `json:"did_list"`
 }
 
 type DidData struct {
@@ -57,19 +61,26 @@ func (h *HttpHandle) AccountList(ctx *gin.Context) {
 
 func (h *HttpHandle) doAccountList(ctx context.Context, req *ReqAccountList, apiResp *http_api.ApiResp) error {
 	var resp RespAccountList
-	data := make([]DidData, 0)
-	parseAddr, err := address.Parse(req.CkbAddr)
+	resp.List = make([]DidData, 0)
+
+	addrHex, err := req.FormatChainTypeAddress(config.Cfg.Server.Net, true)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "ckb address error")
-		log.Warnf("address.Parse err: %s", err.Error())
-		return fmt.Errorf("SearchAccountList err: %s", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
+		return fmt.Errorf("FormatChainTypeAddress err: %s", err.Error())
+	} else if addrHex.DasAlgorithmId != common.DasAlgorithmIdAnyLock {
+		apiResp.ApiRespErr(http_api.ApiCodeParamsInvalid, "address invalid")
+		return nil
 	}
-	args := common.Bytes2Hex(parseAddr.Script.Args)
-	res, err := h.DbDao.QueryDidCell(args, req.DidType)
+	args := common.Bytes2Hex(addrHex.ParsedAddress.Script.Args)
+
+	res, err := h.DbDao.QueryDidCell(args, req.Keyword, req.GetLimit(), req.GetOffset(), req.DidType)
 	if err != nil {
-		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search account list err")
-		return fmt.Errorf("SearchAccountList err: %s", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search did cell list err")
+		return fmt.Errorf("QueryDidCell err: %s", err.Error())
 	}
+
+	recycleAt := tables.GetDidCellRecycleExpiredAt()
+	nowAt := uint64(time.Now().Unix())
 	for _, v := range res {
 		temp := DidData{
 			Outpoint:  v.Outpoint,
@@ -78,14 +89,23 @@ func (h *HttpHandle) doAccountList(ctx context.Context, req *ReqAccountList, api
 			Args:      v.Args,
 			ExpiredAt: v.ExpiredAt,
 		}
-		if v.ExpiredAt > uint64(time.Now().Unix()) {
+
+		if v.ExpiredAt >= nowAt {
 			temp.DidCellStatus = tables.DidCellStatusNormal
-		} else {
+		} else if v.ExpiredAt <= nowAt && v.ExpiredAt >= recycleAt {
 			temp.DidCellStatus = tables.DidCellStatusExpired
+		} else if v.ExpiredAt < recycleAt {
+			temp.DidCellStatus = tables.DidCellStatusRecycle
 		}
-		data = append(data, temp)
+		resp.List = append(resp.List, temp)
 	}
-	resp.List = data
+
+	resp.Total, err = h.DbDao.QueryDidCellTotal(args, req.Keyword, req.DidType)
+	if err != nil {
+		apiResp.ApiRespErr(http_api.ApiCodeDbError, "search did cell count err")
+		return fmt.Errorf("QueryDidCellTotal err: %s", err.Error())
+	}
+
 	apiResp.ApiRespOK(resp)
 	return nil
 }

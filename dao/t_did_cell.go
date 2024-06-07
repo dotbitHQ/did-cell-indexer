@@ -57,14 +57,45 @@ func (d *DbDao) DidCellRenew(oldDidCellOutpoint string, didCellInfo tables.Table
 	return d.db.Select("outpoint", "expired_at", "block_number").Where("outpoint = ?", oldDidCellOutpoint).Updates(didCellInfo).Error
 }
 
-func (d *DbDao) QueryDidCell(args string, didType tables.DidCellStatus) (didList []tables.TableDidCellInfo, err error) {
-	sql := d.db.Where(" args= ?", args)
-	if didType == tables.DidCellStatusNormal {
-		sql.Where("expired_at > ?", time.Now().Unix())
-	} else if didType == tables.DidCellStatusExpired {
-		sql.Where("expired_at <= ?", time.Now().Unix())
+func (d *DbDao) QueryDidCell(args, keyword string, limit, offset int, didType tables.DidCellStatus) (didList []tables.TableDidCellInfo, err error) {
+	recycleAt := tables.GetDidCellRecycleExpiredAt()
+	nowAt := time.Now().Unix()
+	db := d.db.Where("args=?", args)
+	switch didType {
+	case tables.DidCellStatusDefault:
+	case tables.DidCellStatusNormal:
+		db = db.Where("expired_at>=?", nowAt)
+	case tables.DidCellStatusExpired:
+		db = db.Where("expired_at<=? AND expired_at>=", nowAt, recycleAt)
+	case tables.DidCellStatusRecycle:
+		db = db.Where("expired_at<=?", recycleAt)
 	}
-	err = sql.Find(&didList).Error
+
+	if keyword != "" {
+		db = db.Where("account LIKE ?", "%"+keyword+"%")
+	}
+	err = db.Limit(limit).Offset(offset).Find(&didList).Error
+	return
+}
+
+func (d *DbDao) QueryDidCellTotal(args, keyword string, didType tables.DidCellStatus) (count int64, err error) {
+	recycleAt := tables.GetDidCellRecycleExpiredAt()
+	nowAt := time.Now().Unix()
+	db := d.db.Model(tables.TableDidCellInfo{}).Where("args=?", args)
+	switch didType {
+	case tables.DidCellStatusDefault:
+	case tables.DidCellStatusNormal:
+		db = db.Where("expired_at>=?", nowAt)
+	case tables.DidCellStatusExpired:
+		db = db.Where("expired_at<=? AND expired_at>=", nowAt, recycleAt)
+	case tables.DidCellStatusRecycle:
+		db = db.Where("expired_at<=?", recycleAt)
+	}
+
+	if keyword != "" {
+		db = db.Where("account LIKE ?", "%"+keyword+"%")
+	}
+	err = db.Count(&count).Error
 	return
 }
 

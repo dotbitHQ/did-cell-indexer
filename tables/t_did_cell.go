@@ -25,11 +25,17 @@ func (t *TableDidCellInfo) TableName() string {
 	return TableNameDidCellInfo
 }
 
+func GetDidCellRecycleExpiredAt() uint64 {
+	return uint64(time.Now().Add(-time.Hour * 24 * 30 * 3).Unix())
+}
+
 type DidCellStatus int
 
 const (
+	DidCellStatusDefault DidCellStatus = 0
 	DidCellStatusNormal  DidCellStatus = 1
 	DidCellStatusExpired DidCellStatus = 2
+	DidCellStatusRecycle DidCellStatus = 3
 )
 
 func (t *TableDidCellInfo) IsExpired() bool {
