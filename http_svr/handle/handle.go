@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	log = logger.NewLogger("http_handle", logger.LevelDebug)
+	log = logger.NewLoggerDefault("http_handle", logger.LevelDebug, nil)
 )
 
 type HttpHandle struct {

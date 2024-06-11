@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	log               = logger.NewLogger("main", logger.LevelDebug)
+	log               = logger.NewLoggerDefault("main", logger.LevelDebug, nil)
 	exit              = make(chan struct{})
 	ctxServer, cancel = context.WithCancel(context.Background())
 	wgServer          = sync.WaitGroup{}

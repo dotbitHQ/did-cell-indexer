@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var log = logger.NewLogger("notify", logger.LevelDebug)
+var log = logger.NewLoggerDefault("notify", logger.LevelDebug, nil)
 
 const (
 	LarkNotifyUrl = "https://open.larksuite.com/open-apis/bot/v2/hook/%s"

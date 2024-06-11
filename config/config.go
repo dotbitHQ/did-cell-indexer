@@ -21,7 +21,7 @@ import (
 
 var (
 	Cfg CfgServer
-	log = logger.NewLogger("config", logger.LevelDebug)
+	log = logger.NewLoggerDefault("config", logger.LevelDebug, nil)
 )
 
 func InitCfg(configFilePath string) error {

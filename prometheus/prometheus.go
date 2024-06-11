@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	log          = logger.NewLogger("prometheus", logger.LevelDebug)
+	log          = logger.NewLoggerDefault("prometheus", logger.LevelDebug, nil)
 	PromRegister = prometheus.NewRegistry()
 )
 

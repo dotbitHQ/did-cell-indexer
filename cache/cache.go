@@ -12,5 +12,5 @@ type RedisCache struct {
 }
 
 var (
-	log = logger.NewLogger("cache", logger.LevelDebug)
+	log = logger.NewLoggerDefault("cache", logger.LevelDebug, nil)
 )

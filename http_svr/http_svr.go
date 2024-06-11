@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	log = logger.NewLogger("http_svr", logger.LevelDebug)
+	log = logger.NewLoggerDefault("http_svr", logger.LevelDebug, nil)
 )
 
 type HttpSvr struct {

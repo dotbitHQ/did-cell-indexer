@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-var log = logger.NewLogger("block_parser", logger.LevelDebug)
+var log = logger.NewLoggerDefault("block_parser", logger.LevelDebug, nil)
 
 type BlockParser struct {
 	parserType           tables.ParserType
