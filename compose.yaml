@@ -16,7 +16,8 @@ services:
     ports:
       - ${DID_INDEXER_SVR_PORT:-9132}:9132
     volumes:
-      - ./config/config.yaml:/app/config/config.yaml
+      - ./config:/app/config
+      - ./logs:/app/logs
     depends_on:
       - mysql
     networks:
