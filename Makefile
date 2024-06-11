@@ -8,3 +8,9 @@ svr:
 
 update:
 	go mod tidy
+
+docker:
+	docker build --network host -t admindid/did-indexer-svr:latest .
+
+docker-publish:
+	docker image push admindid/did-indexer-svr:latest

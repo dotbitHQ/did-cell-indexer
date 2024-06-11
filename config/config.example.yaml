@@ -17,7 +17,7 @@ db:
     addr: "127.0.0.1:3306"
     user: "root"
     password: "123456"
-    db_name: "d_indexer"
+    db_name: "d_did_indexer"
   redis:
     addr: ""
     password: ""
