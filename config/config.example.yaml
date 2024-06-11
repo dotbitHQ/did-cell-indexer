@@ -7,6 +7,11 @@ server:
   pay_private: ""
   remote_sign_api_url: ""
   tx_fee_rate: 1
+origins:
+notify:
+  sentry_dsn: ""
+  lark_err_key: ""
+  prometheus_push_gateway: ""
 db:
   mysql:
     addr: "127.0.0.1:3306"
