@@ -3,7 +3,7 @@ module did-cell-indexer
 go 1.18
 
 require (
-	github.com/dotbitHQ/das-lib v1.1.1-0.20240606123038-507d47bb1c77
+	github.com/dotbitHQ/das-lib v1.1.1-0.20240611065528-37c372c333e2
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/gin-gonic/gin v1.8.1
@@ -12,8 +12,6 @@ require (
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/prometheus/client_golang v1.0.0
 	github.com/scorpiotzh/toolib v1.1.6
-	github.com/shopspring/decimal v1.3.1
-	github.com/stripe/stripe-go/v74 v74.30.0
 	github.com/urfave/cli/v2 v2.10.2
 	gorm.io/gorm v1.23.6
 )
@@ -67,6 +65,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/scorpiotzh/mylog v1.0.10 // indirect
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sjatsh/uint128 v0.0.0-20240313033229-578752bd051c // indirect
 	github.com/smartystreets/goconvey v1.8.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
