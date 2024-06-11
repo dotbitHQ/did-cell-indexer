@@ -163,44 +163,40 @@ func (b *BlockParser) ActionEditDidCellOwner(req FuncTransactionHandleReq) (resp
 	return
 }
 
-func (b *BlockParser) ActionRenewAccount(req FuncTransactionHandleReq) (resp FuncTransactionHandleResp) {
-	if isCV, err := isCurrentVersionTx(req.Tx, common.DasContractNameAccountCellType); err != nil {
+func (b *BlockParser) ActionDidCellRenew(req FuncTransactionHandleReq) (resp FuncTransactionHandleResp) {
+	if isCV, err := isCurrentVersionTx(req.Tx, common.DasContractNameDidCellType); err != nil {
 		resp.Err = fmt.Errorf("isCurrentVersion err: %s", err.Error())
 		return
 	} else if !isCV {
 		log.Warn("not current version renew account tx")
 		return
 	}
-	log.Info("ActionRenewAccount:", req.BlockNumber, req.TxHash)
-
-	builder, err := witness.AccountCellDataBuilderFromTx(req.Tx, common.DataTypeNew)
-	if err != nil {
-		resp.Err = fmt.Errorf("AccountCellDataBuilderFromTx err: %s", err.Error())
-		return
-	}
-
-	log.Info("ActionRenewAccount:", builder.Account, builder.ExpiredAt)
+	log.Info("ActionDidCellRenew:", req.BlockNumber, req.TxHash)
 
 	//renew did cell
-	var didCellInfo tables.TableDidCellInfo
-	var oldDidCellOutpoint string
-
-	var didCellData witness.DidCellData
-	didEntity, err := witness.TxToOneDidEntity(req.Tx, witness.SourceTypeOutputs)
+	txDidEntity, err := witness.TxToDidEntity(req.Tx)
 	if err != nil {
-		resp.Err = fmt.Errorf("witness.TxToOneDidEntity err: %s", err.Error())
+		resp.Err = fmt.Errorf("TxToDidEntity err: %s", err.Error())
 		return
 	}
-	if err := didCellData.BysToObj(req.Tx.OutputsData[didEntity.Target.Index]); err != nil {
-		resp.Err = fmt.Errorf("didCellData.BysToObj err: %s", err.Error())
+
+	_, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	if err != nil {
+		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
 		return
 	}
-	oldDidCellOutpoint = common.OutPointStruct2String(req.Tx.Inputs[didEntity.Target.Index].PreviousOutput)
-	didCellInfo.Outpoint = common.OutPoint2String(req.Tx.Hash.Hex(), uint(didEntity.Target.Index))
-	didCellInfo.ExpiredAt = didCellData.ExpireAt
+
+	var oldOutpoint string
+	if len(txDidEntity.Inputs) > 0 {
+		oldOutpoint = common.OutPointStruct2String(req.Tx.Inputs[txDidEntity.Inputs[0].Target.Index].PreviousOutput)
+	}
+
+	var didCellInfo tables.TableDidCellInfo
+	didCellInfo.Outpoint = common.OutPoint2String(req.TxHash, uint(txDidEntity.Outputs[0].Target.Index))
+	didCellInfo.ExpiredAt = expiredAt
 	didCellInfo.BlockNumber = req.BlockNumber
 
-	if err := b.DbDao.DidCellRenew(oldDidCellOutpoint, didCellInfo); err != nil {
+	if err := b.DbDao.DidCellRenew(oldOutpoint, didCellInfo); err != nil {
 		log.Error("RenewAccount err:", err.Error())
 		resp.Err = fmt.Errorf("RenewAccount err: %s", err.Error())
 	}

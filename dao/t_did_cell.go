@@ -70,7 +70,8 @@ func (d *DbDao) DidCellRecycle(oldOutpoint string, accountId string) error {
 }
 
 func (d *DbDao) DidCellRenew(oldDidCellOutpoint string, didCellInfo tables.TableDidCellInfo) error {
-	return d.db.Select("outpoint", "expired_at", "block_number").Where("outpoint = ?", oldDidCellOutpoint).Updates(didCellInfo).Error
+	return d.db.Select("outpoint", "expired_at", "block_number").
+		Where("outpoint = ?", oldDidCellOutpoint).Updates(didCellInfo).Error
 }
 
 func (d *DbDao) QueryDidCell(args, keyword string, limit, offset int, didType tables.DidCellStatus) (didList []tables.TableDidCellInfo, err error) {
