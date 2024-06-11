@@ -12,7 +12,7 @@ func (b *BlockParser) registerTransactionHandle() {
 	b.mapTransactionHandle = make(map[string]FuncTransactionHandle)
 	b.mapTransactionHandle[common.DasActionConfig] = b.ActionConfig
 
-	b.mapTransactionHandle[common.DasActionAccountCellUpgrade] = b.ActionAccountUpgrade  // upgrade account cell
+	//b.mapTransactionHandle[common.DasActionAccountCellUpgrade] = b.ActionAccountUpgrade  // upgrade account cell
 	b.mapTransactionHandle[common.DidCellActionEditRecords] = b.ActionEditDidCellRecords // edit did cell record
 	b.mapTransactionHandle[common.DidCellActionEditOwner] = b.ActionEditDidCellOwner     // edit did cell owner
 	b.mapTransactionHandle[common.DidCellActionRecycle] = b.ActionDidCellRecycle         //  did cell recycle

@@ -22,6 +22,7 @@ func NewGormDB(dbMysql config.DbMysql) (*DbDao, error) {
 		tables.TableBlockParserInfo{},
 		tables.TableDidCellInfo{},
 		tables.TableRecordsInfo{},
+		tables.TableTxInfo{},
 	); err != nil {
 		return nil, err
 	}

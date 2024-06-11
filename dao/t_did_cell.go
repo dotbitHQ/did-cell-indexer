@@ -3,6 +3,7 @@ package dao
 import (
 	"did-cell-indexer/tables"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"time"
 )
 
@@ -10,7 +11,7 @@ func (d *DbDao) AccountUpgrade(didCellInfo tables.TableDidCellInfo) error {
 	return d.db.Create(didCellInfo).Error
 }
 
-func (d *DbDao) CreateDidCellRecordsInfos(outpoint string, didCellInfo tables.TableDidCellInfo, recordsInfos []tables.TableRecordsInfo) error {
+func (d *DbDao) CreateDidCellRecordsInfos(outpoint string, didCellInfo tables.TableDidCellInfo, recordsInfos []tables.TableRecordsInfo, txInfo tables.TableTxInfo) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("account_id = ?", didCellInfo.AccountId).
 			Delete(&tables.TableRecordsInfo{}).Error; err != nil {
@@ -26,11 +27,17 @@ func (d *DbDao) CreateDidCellRecordsInfos(outpoint string, didCellInfo tables.Ta
 			Updates(didCellInfo).Error; err != nil {
 			return err
 		}
+
+		if err := tx.Clauses(clause.Insert{
+			Modifier: "IGNORE",
+		}).Create(&txInfo).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 }
 
-func (d *DbDao) EditDidCellOwner(oldOutpoint string, didCellInfo tables.TableDidCellInfo, recordsInfos []tables.TableRecordsInfo) error {
+func (d *DbDao) EditDidCellOwner(oldOutpoint string, didCellInfo tables.TableDidCellInfo, recordsInfos []tables.TableRecordsInfo, txInfo tables.TableTxInfo) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
 		if oldOutpoint != "" {
 			if err := tx.Where("outpoint=?", oldOutpoint).
@@ -38,7 +45,9 @@ func (d *DbDao) EditDidCellOwner(oldOutpoint string, didCellInfo tables.TableDid
 				return err
 			}
 		}
-		if err := tx.Create(&didCellInfo).Error; err != nil {
+		if err := tx.Clauses(clause.Insert{
+			Modifier: "IGNORE",
+		}).Create(&didCellInfo).Error; err != nil {
 			return err
 		}
 		if err := tx.Where("account_id = ?", didCellInfo.AccountId).
@@ -51,11 +60,17 @@ func (d *DbDao) EditDidCellOwner(oldOutpoint string, didCellInfo tables.TableDid
 				return err
 			}
 		}
+
+		if err := tx.Clauses(clause.Insert{
+			Modifier: "IGNORE",
+		}).Create(&txInfo).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 }
 
-func (d *DbDao) DidCellRecycle(oldOutpoint string, accountId string) error {
+func (d *DbDao) DidCellRecycle(oldOutpoint string, accountId string, txInfo tables.TableTxInfo) error {
 	return d.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("account_id=?", accountId).
 			Delete(&tables.TableRecordsInfo{}).Error; err != nil {
@@ -65,13 +80,30 @@ func (d *DbDao) DidCellRecycle(oldOutpoint string, accountId string) error {
 			Delete(&tables.TableDidCellInfo{}).Error; err != nil {
 			return err
 		}
+		if err := tx.Clauses(clause.Insert{
+			Modifier: "IGNORE",
+		}).Create(&txInfo).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 }
 
-func (d *DbDao) DidCellRenew(oldDidCellOutpoint string, didCellInfo tables.TableDidCellInfo) error {
-	return d.db.Select("outpoint", "expired_at", "block_number").
-		Where("outpoint = ?", oldDidCellOutpoint).Updates(didCellInfo).Error
+func (d *DbDao) DidCellRenew(oldDidCellOutpoint string, didCellInfo tables.TableDidCellInfo, txInfo tables.TableTxInfo) error {
+	return d.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Select("outpoint", "expired_at", "block_number").
+			Where("outpoint = ?", oldDidCellOutpoint).
+			Updates(didCellInfo).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Clauses(clause.Insert{
+			Modifier: "IGNORE",
+		}).Create(&txInfo).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (d *DbDao) QueryDidCell(args, keyword string, limit, offset int, didType tables.DidCellStatus) (didList []tables.TableDidCellInfo, err error) {

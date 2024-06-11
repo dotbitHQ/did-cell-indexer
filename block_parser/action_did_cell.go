@@ -1,6 +1,7 @@
 package block_parser
 
 import (
+	"context"
 	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
@@ -95,7 +96,18 @@ func (b *BlockParser) ActionEditDidCellRecords(req FuncTransactionHandleReq) (re
 	didCellInfo.BlockNumber = req.BlockNumber
 	didCellInfo.Outpoint = common.OutPoint2String(req.Tx.Hash.Hex(), uint(txDidEntity.Outputs[0].Target.Index))
 
-	if err := b.DbDao.CreateDidCellRecordsInfos(oldOutpoint, didCellInfo, recordsInfos); err != nil {
+	txInfo := tables.TableTxInfo{
+		Outpoint:       didCellInfo.Outpoint,
+		BlockNumber:    req.BlockNumber,
+		BlockTimestamp: req.BlockTimestamp,
+		AccountId:      accountId,
+		Account:        account,
+		Action:         common.DidCellActionEditRecords,
+		Args:           common.Bytes2Hex(req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.Args),
+		LockCodeHash:   req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.CodeHash.Hex(),
+	}
+
+	if err := b.DbDao.CreateDidCellRecordsInfos(oldOutpoint, didCellInfo, recordsInfos, txInfo); err != nil {
 		resp.Err = fmt.Errorf("CreateDidCellRecordsInfos err: %s", err.Error())
 		return
 	}
@@ -151,12 +163,30 @@ func (b *BlockParser) ActionEditDidCellOwner(req FuncTransactionHandleReq) (resp
 		})
 	}
 
+	txInfo := tables.TableTxInfo{
+		Outpoint:       didCellInfo.Outpoint,
+		BlockNumber:    req.BlockNumber,
+		BlockTimestamp: req.BlockTimestamp,
+		AccountId:      didCellInfo.AccountId,
+		Account:        didCellInfo.Account,
+		Action:         common.DidCellActionEditOwner,
+		Args:           "",
+		LockCodeHash:   "",
+	}
 	var oldOutpoint string
 	if len(txDidEntity.Inputs) > 0 {
 		oldOutpoint = common.OutPointStruct2String(req.Tx.Inputs[txDidEntity.Inputs[0].Target.Index].PreviousOutput)
+		preInput := req.Tx.Inputs[txDidEntity.Inputs[0].Target.Index].PreviousOutput
+		preTx, err := b.DasCore.Client().GetTransaction(context.Background(), preInput.TxHash)
+		if err != nil {
+			resp.Err = fmt.Errorf("GetTransaction err: %s", err.Error())
+			return
+		}
+		txInfo.LockCodeHash = preTx.Transaction.Outputs[preInput.Index].Lock.CodeHash.Hex()
+		txInfo.Args = common.Bytes2Hex(preTx.Transaction.Outputs[preInput.Index].Lock.Args)
 	}
 
-	if err := b.DbDao.EditDidCellOwner(oldOutpoint, didCellInfo, recordsInfos); err != nil {
+	if err := b.DbDao.EditDidCellOwner(oldOutpoint, didCellInfo, recordsInfos, txInfo); err != nil {
 		resp.Err = fmt.Errorf("EditDidCellOwner err: %s", err.Error())
 		return
 	}
@@ -180,11 +210,12 @@ func (b *BlockParser) ActionDidCellRenew(req FuncTransactionHandleReq) (resp Fun
 		return
 	}
 
-	_, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	account, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
 	if err != nil {
 		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
 		return
 	}
+	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
 
 	var oldOutpoint string
 	if len(txDidEntity.Inputs) > 0 {
@@ -196,9 +227,20 @@ func (b *BlockParser) ActionDidCellRenew(req FuncTransactionHandleReq) (resp Fun
 	didCellInfo.ExpiredAt = expiredAt
 	didCellInfo.BlockNumber = req.BlockNumber
 
-	if err := b.DbDao.DidCellRenew(oldOutpoint, didCellInfo); err != nil {
-		log.Error("RenewAccount err:", err.Error())
-		resp.Err = fmt.Errorf("RenewAccount err: %s", err.Error())
+	txInfo := tables.TableTxInfo{
+		Outpoint:       didCellInfo.Outpoint,
+		BlockNumber:    req.BlockNumber,
+		BlockTimestamp: req.BlockTimestamp,
+		AccountId:      accountId,
+		Account:        account,
+		Action:         common.DidCellActionRenew,
+		Args:           common.Bytes2Hex(req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.Args),
+		LockCodeHash:   req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.CodeHash.Hex(),
+	}
+
+	if err := b.DbDao.DidCellRenew(oldOutpoint, didCellInfo, txInfo); err != nil {
+		resp.Err = fmt.Errorf("DidCellRenew err: %s", err.Error())
+		return
 	}
 	return
 }
@@ -234,7 +276,18 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
 	oldOutpoint := common.OutPointStruct2String(req.Tx.Inputs[didEntity.Target.Index].PreviousOutput)
 
-	if err := b.DbDao.DidCellRecycle(oldOutpoint, accountId); err != nil {
+	txInfo := tables.TableTxInfo{
+		Outpoint:       common.OutPoint2String(req.TxHash, 0),
+		BlockNumber:    req.BlockNumber,
+		BlockTimestamp: req.BlockTimestamp,
+		AccountId:      accountId,
+		Account:        account,
+		Action:         common.DidCellActionEditOwner,
+		Args:           common.Bytes2Hex(preTx.Transaction.Outputs[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index].Lock.Args),
+		LockCodeHash:   preTx.Transaction.Outputs[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index].Lock.CodeHash.Hex(),
+	}
+
+	if err := b.DbDao.DidCellRecycle(oldOutpoint, accountId, txInfo); err != nil {
 		resp.Err = fmt.Errorf("DidCellRecycle err: %s", err.Error())
 		return
 	}
