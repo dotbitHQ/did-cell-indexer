@@ -14,7 +14,7 @@ services:
     working_dir: /app
     entrypoint: [ "/app/did-indexer-svr", "--config", "/app/config/config.yaml" ]
     ports:
-      - ${DAS_DATABASE_PORT:-8118}:8118
+      - ${DID_INDEXER_SVR_PORT:-9132}:9132
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
     depends_on:
@@ -23,6 +23,11 @@ services:
       - dotbit
     extra_hosts:
       - host.docker.internal:host-gateway
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: 3
 
   mysql:
     image: mysql/mysql-server:8.0
