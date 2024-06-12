@@ -26,9 +26,9 @@ func (b *BlockParser) ActionAccountUpgrade(req FuncTransactionHandleReq) (resp F
 	}
 	didCellArgs := common.Bytes2Hex(req.Tx.Outputs[didEntity.Target.Index].Lock.Args)
 
-	account, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[didEntity.Target.Index])
+	account, expiredAt, err := witness.GetAccountAndExpireFromDidCellData(req.Tx.OutputsData[didEntity.Target.Index])
 	if err != nil {
-		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
+		resp.Err = fmt.Errorf("witness.GetAccountAndExpireFromDidCellData err: %s", err.Error())
 		return
 	}
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
@@ -67,9 +67,9 @@ func (b *BlockParser) ActionEditDidCellRecords(req FuncTransactionHandleReq) (re
 		return
 	}
 
-	account, _, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	account, _, err := witness.GetAccountAndExpireFromDidCellData(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
 	if err != nil {
-		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
+		resp.Err = fmt.Errorf("witness.GetAccountAndExpireFromDidCellData err: %s", err.Error())
 		return
 	}
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
@@ -131,9 +131,9 @@ func (b *BlockParser) ActionEditDidCellOwner(req FuncTransactionHandleReq) (resp
 		return
 	}
 
-	account, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	account, expiredAt, err := witness.GetAccountAndExpireFromDidCellData(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
 	if err != nil {
-		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
+		resp.Err = fmt.Errorf("witness.GetAccountAndExpireFromDidCellData err: %s", err.Error())
 		return
 	}
 
@@ -210,9 +210,9 @@ func (b *BlockParser) ActionDidCellRenew(req FuncTransactionHandleReq) (resp Fun
 		return
 	}
 
-	account, expiredAt, err := getAccAntExpire(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
+	account, expiredAt, err := witness.GetAccountAndExpireFromDidCellData(req.Tx.OutputsData[txDidEntity.Outputs[0].Target.Index])
 	if err != nil {
-		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
+		resp.Err = fmt.Errorf("witness.GetAccountAndExpireFromDidCellData err: %s", err.Error())
 		return
 	}
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
@@ -267,9 +267,9 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 	}
 	log.Info("ActionDidCellRecycle:", req.BlockNumber, req.TxHash, req.Action)
 
-	account, _, err := getAccAntExpire(preTx.Transaction.OutputsData[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index])
+	account, _, err := witness.GetAccountAndExpireFromDidCellData(preTx.Transaction.OutputsData[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index])
 	if err != nil {
-		resp.Err = fmt.Errorf("getAccAntExpire err: %s", err.Error())
+		resp.Err = fmt.Errorf("witness.GetAccountAndExpireFromDidCellData err: %s", err.Error())
 		return
 	}
 
@@ -293,25 +293,4 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 	}
 	return
 
-}
-
-func getAccAntExpire(bys []byte) (string, uint64, error) {
-	account := ""
-	expiredAt := uint64(0)
-
-	sporeData, didCellData, err := witness.BysToDidCellData(bys)
-	if err != nil {
-		return "", 0, fmt.Errorf("BysToDidCellData err: %s", err.Error())
-	} else if sporeData != nil {
-		didCellDataLV, err := sporeData.ContentToDidCellDataLV()
-		if err != nil {
-			return "", 0, fmt.Errorf("ContentToDidCellDataLV err: %s", err.Error())
-		}
-		account = didCellDataLV.Account
-		expiredAt = didCellDataLV.ExpireAt
-	} else if didCellData != nil {
-		account = didCellData.Account
-		expiredAt = didCellData.ExpireAt
-	}
-	return account, expiredAt, nil
 }
