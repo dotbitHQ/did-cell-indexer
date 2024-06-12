@@ -14,6 +14,7 @@ type TableTxInfo struct {
 	Account        string               `json:"account" gorm:"column:account; index:k_account; type:varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT ''"`
 	Action         common.DidCellAction `json:"action" gorm:"column:action; index:k_action; type:varchar(255) NOT NULL DEFAULT '' COMMENT ''"`
 	Args           string               `json:"args" gorm:"column:args; index:k_args; type:varchar(255) NOT NULL DEFAULT '' COMMENT ''"`
+	Address        string               `json:"address" gorm:"column:address; type:varchar(255) NOT NULL DEFAULT '' COMMENT ''"`
 	LockCodeHash   string               `json:"lock_code_hash" gorm:"column:lock_code_hash; type:varchar(255) NOT NULL DEFAULT '' "`
 	CreatedAt      time.Time            `json:"created_at" gorm:"column:created_at;type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT ''"`
 	UpdatedAt      time.Time            `json:"updated_at" gorm:"column:updated_at;type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT ''"`

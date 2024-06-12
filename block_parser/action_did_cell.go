@@ -2,10 +2,12 @@ package block_parser
 
 import (
 	"context"
+	"did-cell-indexer/config"
 	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/common"
 	"github.com/dotbitHQ/das-lib/witness"
+	"github.com/nervosnetwork/ckb-sdk-go/address"
 	"strconv"
 )
 
@@ -96,6 +98,16 @@ func (b *BlockParser) ActionEditDidCellRecords(req FuncTransactionHandleReq) (re
 	didCellInfo.BlockNumber = req.BlockNumber
 	didCellInfo.Outpoint = common.OutPoint2String(req.Tx.Hash.Hex(), uint(txDidEntity.Outputs[0].Target.Index))
 
+	mode := address.Mainnet
+	if config.Cfg.Server.Net != common.DasNetTypeMainNet {
+		mode = address.Testnet
+	}
+	anyLockAddr, err := address.ConvertScriptToAddress(mode, req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock)
+	if err != nil {
+		resp.Err = fmt.Errorf("address.ConvertScriptToAddress err: %s", err.Error())
+		return
+	}
+
 	txInfo := tables.TableTxInfo{
 		Outpoint:       didCellInfo.Outpoint,
 		BlockNumber:    req.BlockNumber,
@@ -104,6 +116,7 @@ func (b *BlockParser) ActionEditDidCellRecords(req FuncTransactionHandleReq) (re
 		Account:        account,
 		Action:         common.DidCellActionEditRecords,
 		Args:           common.Bytes2Hex(req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.Args),
+		Address:        anyLockAddr,
 		LockCodeHash:   req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.CodeHash.Hex(),
 	}
 
@@ -172,6 +185,7 @@ func (b *BlockParser) ActionEditDidCellOwner(req FuncTransactionHandleReq) (resp
 		Action:         common.DidCellActionEditOwner,
 		Args:           "",
 		LockCodeHash:   "",
+		Address:        "",
 	}
 	var oldOutpoint string
 	if len(txDidEntity.Inputs) > 0 {
@@ -184,6 +198,17 @@ func (b *BlockParser) ActionEditDidCellOwner(req FuncTransactionHandleReq) (resp
 		}
 		txInfo.LockCodeHash = preTx.Transaction.Outputs[preInput.Index].Lock.CodeHash.Hex()
 		txInfo.Args = common.Bytes2Hex(preTx.Transaction.Outputs[preInput.Index].Lock.Args)
+
+		mode := address.Mainnet
+		if config.Cfg.Server.Net != common.DasNetTypeMainNet {
+			mode = address.Testnet
+		}
+		anyLockAddr, err := address.ConvertScriptToAddress(mode, preTx.Transaction.Outputs[preInput.Index].Lock)
+		if err != nil {
+			resp.Err = fmt.Errorf("address.ConvertScriptToAddress err: %s", err.Error())
+			return
+		}
+		txInfo.Address = anyLockAddr
 	}
 
 	if err := b.DbDao.EditDidCellOwner(oldOutpoint, didCellInfo, recordsInfos, txInfo); err != nil {
@@ -227,6 +252,15 @@ func (b *BlockParser) ActionDidCellRenew(req FuncTransactionHandleReq) (resp Fun
 	didCellInfo.ExpiredAt = expiredAt
 	didCellInfo.BlockNumber = req.BlockNumber
 
+	mode := address.Mainnet
+	if config.Cfg.Server.Net != common.DasNetTypeMainNet {
+		mode = address.Testnet
+	}
+	anyLockAddr, err := address.ConvertScriptToAddress(mode, req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock)
+	if err != nil {
+		resp.Err = fmt.Errorf("address.ConvertScriptToAddress err: %s", err.Error())
+		return
+	}
 	txInfo := tables.TableTxInfo{
 		Outpoint:       didCellInfo.Outpoint,
 		BlockNumber:    req.BlockNumber,
@@ -235,6 +269,7 @@ func (b *BlockParser) ActionDidCellRenew(req FuncTransactionHandleReq) (resp Fun
 		Account:        account,
 		Action:         common.DidCellActionRenew,
 		Args:           common.Bytes2Hex(req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.Args),
+		Address:        anyLockAddr,
 		LockCodeHash:   req.Tx.Outputs[txDidEntity.Outputs[0].Target.Index].Lock.CodeHash.Hex(),
 	}
 
@@ -276,6 +311,15 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(account))
 	oldOutpoint := common.OutPointStruct2String(req.Tx.Inputs[didEntity.Target.Index].PreviousOutput)
 
+	mode := address.Mainnet
+	if config.Cfg.Server.Net != common.DasNetTypeMainNet {
+		mode = address.Testnet
+	}
+	anyLockAddr, err := address.ConvertScriptToAddress(mode, preTx.Transaction.Outputs[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index].Lock)
+	if err != nil {
+		resp.Err = fmt.Errorf("address.ConvertScriptToAddress err: %s", err.Error())
+		return
+	}
 	txInfo := tables.TableTxInfo{
 		Outpoint:       common.OutPoint2String(req.TxHash, 0),
 		BlockNumber:    req.BlockNumber,
@@ -284,6 +328,7 @@ func (b *BlockParser) ActionDidCellRecycle(req FuncTransactionHandleReq) (resp F
 		Account:        account,
 		Action:         common.DidCellActionEditOwner,
 		Args:           common.Bytes2Hex(preTx.Transaction.Outputs[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index].Lock.Args),
+		Address:        anyLockAddr,
 		LockCodeHash:   preTx.Transaction.Outputs[req.Tx.Inputs[didEntity.Target.Index].PreviousOutput.Index].Lock.CodeHash.Hex(),
 	}
 
