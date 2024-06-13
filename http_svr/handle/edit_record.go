@@ -11,7 +11,6 @@ import (
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/dotbitHQ/das-lib/witness"
 	"github.com/gin-gonic/gin"
-	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 	"regexp"
@@ -95,7 +94,6 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 		return fmt.Errorf("checkSystemUpgrade err: %s", err.Error())
 	}
 
-	var didCellOutPoint *types.OutPoint
 	accountId := common.Bytes2Hex(common.GetAccountIdByAccount(req.Account))
 
 	acc, err := h.DbDao.GetAccountInfoByAccountId(accountId)
@@ -171,11 +169,11 @@ func (h *HttpHandle) doEditRecord(req *ReqEditRecord, apiResp *http_api.ApiResp)
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
 		Action:          common.DidCellActionEditRecords,
-		DidCellOutPoint: didCellOutPoint,
+		DidCellOutPoint: acc.GetOutpoint(),
 		EditRecords:     editRecords,
 	})
 	if err != nil {
-		log.Error("txbuilder.BuildDidCellTx err : ", err.Error())
+		apiResp.ApiRespErr(http_api.ApiCodeError500, "Failed to build tx")
 		return fmt.Errorf("buildEditManagerTx err: %s", err.Error())
 	}
 	reqBuild := reqBuildTx{
