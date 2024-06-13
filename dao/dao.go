@@ -5,6 +5,7 @@ import (
 	"did-cell-indexer/tables"
 	"fmt"
 	"github.com/dotbitHQ/das-lib/http_api"
+	"github.com/dotbitHQ/das-lib/http_api/logger"
 	"gorm.io/gorm"
 )
 
@@ -13,7 +14,8 @@ type DbDao struct {
 }
 
 func NewGormDB(dbMysql config.DbMysql) (*DbDao, error) {
-	db, err := http_api.NewGormDB(dbMysql.Addr, dbMysql.User, dbMysql.Password, dbMysql.DbName, 100, 100)
+	log := logger.NewLoggerDefault("dao", logger.LevelDebug, nil)
+	db, err := http_api.NewGormDBWithLog(dbMysql.Addr, dbMysql.User, dbMysql.Password, dbMysql.DbName, 100, 100, log)
 	if err != nil {
 		return nil, fmt.Errorf("http_api.NewGormDB err: %s", err.Error())
 	}
