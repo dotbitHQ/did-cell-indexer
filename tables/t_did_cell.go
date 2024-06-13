@@ -1,6 +1,8 @@
 package tables
 
 import (
+	"github.com/dotbitHQ/das-lib/common"
+	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"time"
 )
 
@@ -43,4 +45,8 @@ func (t *TableDidCellInfo) IsExpired() bool {
 		return true
 	}
 	return false
+}
+
+func (t *TableDidCellInfo) GetOutpoint() *types.OutPoint {
+	return common.String2OutPointStruct(t.Outpoint)
 }

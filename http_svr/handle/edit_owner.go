@@ -9,7 +9,6 @@ import (
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/gin-gonic/gin"
-	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 	"strings"
@@ -88,8 +87,6 @@ func (h *HttpHandle) doEditOwner(req *ReqEditOwner, apiResp *http_api.ApiResp) e
 		return fmt.Errorf("checkSystemUpgrade err: %s", err.Error())
 	}
 
-	var didCellOutPoint *types.OutPoint
-
 	acc, err := h.DbDao.GetAccountInfoByAccountId(accountId)
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeDbError, "Failed to get account info")
@@ -109,7 +106,7 @@ func (h *HttpHandle) doEditOwner(req *ReqEditOwner, apiResp *http_api.ApiResp) e
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
 		Action:          common.DidCellActionEditOwner,
-		DidCellOutPoint: didCellOutPoint,
+		DidCellOutPoint: acc.GetOutpoint(),
 		EditOwnerLock:   editOwnerLock,
 	})
 	if err != nil {
