@@ -75,12 +75,11 @@ func (h *HttpHandle) doRecycle(req *ReqRecycle, apiResp *http_api.ApiResp) error
 		return nil
 	}
 
-	didCellOutpoint := common.String2OutPointStruct(didAccount.Outpoint)
 	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
 		DasCore:         h.DasCore,
 		DasCache:        h.DasCache,
 		Action:          common.DidCellActionRecycle,
-		DidCellOutPoint: didCellOutpoint,
+		DidCellOutPoint: didAccount.GetOutpoint(),
 	})
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "Failed to build recycle tx")

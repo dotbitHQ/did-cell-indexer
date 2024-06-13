@@ -71,10 +71,9 @@ type reqBuildTx struct {
 	Account string `json:"account"`
 }
 type SignInfo struct {
-	SignKey     string               `json:"sign_key"`               // sign tx key
-	SignAddress string               `json:"sign_address,omitempty"` // sign address
-	SignList    []txbuilder.SignData `json:"sign_list"`              // sign list
-	CKBTx       string               `json:"ckb_tx"`
+	SignKey  string               `json:"sign_key"`  // sign tx key
+	SignList []txbuilder.SignData `json:"sign_list"` // sign list
+	CKBTx    string               `json:"ckb_tx"`
 }
 
 func (h *HttpHandle) buildTx(req *reqBuildTx, txParams *txbuilder.BuildTransactionParams) (*SignInfo, error) {
@@ -93,11 +92,9 @@ func (h *HttpHandle) buildTx(req *reqBuildTx, txParams *txbuilder.BuildTransacti
 	var skipGroups []int
 
 	switch req.Action {
-	case common.DidCellActionRecycle:
-		changeCapacity := txBuilder.Transaction.Outputs[0].Capacity - txFee
-		txBuilder.Transaction.Outputs[0].Capacity = changeCapacity
-		log.Info("buildTx user:", req.Action, sizeInBlock, changeCapacity)
-	case common.DidCellActionEditRecords, common.DidCellActionEditOwner:
+	case common.DidCellActionRecycle,
+		common.DidCellActionEditRecords,
+		common.DidCellActionEditOwner:
 		changeCapacity := txBuilder.Transaction.Outputs[0].Capacity - txFee
 		txBuilder.Transaction.Outputs[0].Capacity = changeCapacity
 		log.Info("buildTx user:", req.Action, sizeInBlock, changeCapacity)

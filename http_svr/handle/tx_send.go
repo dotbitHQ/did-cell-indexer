@@ -9,13 +9,13 @@ import (
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis"
+	"github.com/nervosnetwork/ckb-sdk-go/rpc"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 )
 
 type ReqTxSend struct {
-	SignKey  string               `json:"sign_key"`
-	SignList []txbuilder.SignData `json:"sign_list"`
+	SignInfo
 }
 
 type RespTxSend struct {
@@ -64,6 +64,30 @@ func (h *HttpHandle) doTxSend(req *ReqTxSend, apiResp *http_api.ApiResp) error {
 	}
 
 	// sign
+	if req.CKBTx != "" {
+		log.Info("CKBTx:", req.CKBTx)
+		userTx, err := rpc.TransactionFromString(req.CKBTx)
+		if err != nil {
+			apiResp.ApiRespErr(http_api.ApiCodeError500, fmt.Sprintf("rpc.TransactionFromString err: %s", err.Error()))
+			return fmt.Errorf("rpc.TransactionFromString err: %s", err.Error())
+		}
+		cacheTxHash, err := sic.BuilderTx.Transaction.ComputeHash()
+		if err != nil {
+			apiResp.ApiRespErr(http_api.ApiCodeError500, "ComputeHash err")
+			return fmt.Errorf("ComputeHash err: %s", err.Error())
+		}
+		userTxHash, err := userTx.ComputeHash()
+		if err != nil {
+			apiResp.ApiRespErr(http_api.ApiCodeError500, "ComputeHash err")
+			return fmt.Errorf("ComputeHash err: %s", err.Error())
+		}
+		if userTxHash.String() != cacheTxHash.String() {
+			apiResp.ApiRespErr(http_api.ApiCodeError500, "ckb tx invalid")
+			return nil
+		}
+		sic.BuilderTx.Transaction = userTx
+	}
+
 	txBuilder := txbuilder.NewDasTxBuilderFromBase(h.TxBuilderBase, sic.BuilderTx)
 	if err := txBuilder.AddSignatureForTx(req.SignList); err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "add signature fail")
@@ -77,17 +101,13 @@ func (h *HttpHandle) doTxSend(req *ReqTxSend, apiResp *http_api.ApiResp) error {
 		return fmt.Errorf("SendTransaction err: %s", err.Error())
 	}
 	resp.Hash = hash.Hex()
+
 	// cache
 	var outpoints []string
 	for _, v := range txBuilder.Transaction.Inputs {
 		outpoints = append(outpoints, common.OutPoint2String(v.PreviousOutput.TxHash.String(), v.PreviousOutput.Index))
 	}
 	h.DasCache.AddOutPoint(outpoints)
-	// .bit balance ckb pay
-	if sic.Action == common.DasActionTransfer {
-		apiResp.ApiRespOK(resp)
-		return nil
-	}
 
 	apiResp.ApiRespOK(resp)
 	return nil
