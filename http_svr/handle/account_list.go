@@ -30,7 +30,6 @@ type DidData struct {
 	Outpoint      string               `json:"outpoint"`
 	AccountId     string               `json:"account_id"`
 	Account       string               `json:"account"`
-	Args          string               `json:"args"`
 	ExpiredAt     uint64               `json:"expired_at"`
 	DidCellStatus tables.DidCellStatus `json:"did_cell_status"`
 }
@@ -86,7 +85,6 @@ func (h *HttpHandle) doAccountList(ctx context.Context, req *ReqAccountList, api
 			Outpoint:  v.Outpoint,
 			Account:   v.Account,
 			AccountId: v.AccountId,
-			Args:      v.Args,
 			ExpiredAt: v.ExpiredAt,
 		}
 
