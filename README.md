@@ -58,8 +58,11 @@ cd did-cell-indexer
 # edit config/config.yaml for svr
 vim config/config.yaml
 
+# edit compose.yaml
+vim compose.yaml
+
 # run
-docker-compose up -d
+docker compose up -d
 ```
 
 _if you already have mysql,redis installed, just run_

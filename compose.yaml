@@ -39,7 +39,7 @@ services:
       - ./mysql-data:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: ${DAS_DB_PORT:-123456}
-      MYSQL_DATABASE: d_did_indexer
+      MYSQL_DATABASE: did_indexer
       TZ: Asia/Shanghai
       # This allows ip ranges from 182.17.0.1 to 182.17.255.255 to connect to root
       MYSQL_ROOT_HOST: "182.17.%.%"

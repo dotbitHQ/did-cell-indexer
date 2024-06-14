@@ -16,5 +16,6 @@ vendor/
 .idea
 did_indexer_svr
 logs/*.log
+mysql-data/
 
 # temp file
