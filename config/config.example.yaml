@@ -1,7 +1,7 @@
 server:
   is_update: false
   name: "did-indexer-svr"
-  net: 2
+  net: 2 # 2-testnet, 1-mainnet
   http_port: ":9132"
   pay_server_address: ""
   pay_private: ""
@@ -16,16 +16,16 @@ db:
   mysql:
     addr: "127.0.0.1:3306"
     user: "root"
-    password: "123456"
-    db_name: "d_did_indexer"
+    password: "tzh123456"
+    db_name: "did_indexer"
   redis:
-    addr: ""
+    addr: "localhost:6379"
     password: ""
     db_num: 0
 chain:
   ckb:
-    node: ""
-    current_block_number: 13184725 # testnet-13184725
+    node: "https://testnet.ckb.dev"
+    current_block_number: 13184725 # 13184725-testnet2, 13226009-mainnet
     confirm_num: 4
     concurrency_num: 100
 
