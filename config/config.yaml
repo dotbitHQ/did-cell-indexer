@@ -7,7 +7,7 @@ db:
   mysql:
     addr: "127.0.0.1:3306" # 172.17.0.1: docker 182.17.0.1: docker-compose
     user: "root"
-    password: ""
+    password: "tzh123456"
     db_name: "did_indexer"
   redis:
     addr: "localhost:6379" # 172.17.0.1: docker 182.17.0.1: docker-compose

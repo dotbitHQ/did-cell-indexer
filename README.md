@@ -46,16 +46,26 @@ make svr
 * docker-compose >= 2.2.2
 
 ```bash
+# install docker compose
 sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+# get the code
+git clone https://github.com/dotbitHQ/did-cell-indexer.git
+cd did-cell-indexer
+
+# edit config/config.yaml for svr
+vim config/config.yaml
+
+# run
 docker-compose up -d
 ```
 
 _if you already have mysql,redis installed, just run_
 
 ```bash
-docker run -dp 9132:9132 -v $PWD/config/config.yaml:/app/config/config.yaml --name did-indexer-svr admindid/did-indexer-svr:latest
+docker run -dp 9132:9132 -v $PWD/config:/app/config -v $PWD/logs:/app/logs --name did-indexer-svr admindid/did-indexer-svr:latest
 ```
 
 ## APIs
