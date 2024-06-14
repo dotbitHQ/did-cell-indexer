@@ -2,7 +2,7 @@
     * [Account List](#account-list)
     * [Record List](#record-list)
 * [Operate API LIST](#operate-api-list)
-    * [Transfer](#transfer)
+    * [Edit Owner](#edit-owner)
     * [Edit Record](#edit-record)
     * [Recycle](#recycle)
     * [Tx Send](#tx-send)
@@ -37,7 +37,7 @@ Content-type: application/json
 
 The request accepts the following data in JSON format.
 
-* ckb_address: ckb address; Type: string; Required: Yes.
+* key_info: owner of account; Type: string; Required: Yes.
 * did_type: did cell type, 0(default value, search all did cell), 1(search normal did cell), 2(search expired did cell);
   Type: Integer; Required: No.
 
@@ -75,13 +75,12 @@ The following data is returned in JSON format by the service.
 * outpoint: did cell outpoint; Type: String
 * account_id: did cell account_id; Type: String
 * account: did cell account; Type: String
-* args: did cell args; Type: String
 * expired_at: did cell expired_at; Type: Integer
 * did_cell_status: did cell status; Type: Integer
 
 ## Record List
 
-Query record list of a did
+Query record list of a did cell account
 
 **Request Syntax**
 
@@ -92,7 +91,7 @@ Content-type: application/json
 
 ```json
 {
-  "account": "aaaaa.bit"
+  "account": "xxxxx.bit"
 }
 ```
 
@@ -138,9 +137,9 @@ The following data is returned in JSON format by the service.
 * value: record value; Type: String
 * ttl: record ttl; Type: String
 
-## Transfer
+## Edit Owner
 
-Transfer a did cell to other ckb address
+Transfer a did cell account to other ckb address
 
 **Request Syntax**
 
@@ -151,8 +150,12 @@ Content-type: application/json
 
 ```json
 {
+  "type": "blockchain",
+  "key_info": {
+    "coin_type": "309",
+    "key": "ckbxxx..."
+  },
   "account": "aaaaa.bit",
-  "ckb_addr": "",
   "receive_ckb_addr": ""
 }
 ```
@@ -161,8 +164,8 @@ Content-type: application/json
 
 The request accepts the following data in JSON format.
 
+* key_info: owner of account; Type: string; Required: Yes.
 * account: dotbit account; Type: string; Required: Yes.
-* ckb_addr: ckb address of the account`s owner; Type: string; Required: Yes.
 * receive_ckb_addr: ckb address of the receiver; Type: string; Required: Yes.
 
 **Response Syntax**
@@ -183,7 +186,8 @@ Content-type: application/json
         "sign_type": 5,
         "sign_msg": ""
       }
-    ]
+    ],
+    "ckb_tx": ""
   }
 }
 ```
@@ -195,6 +199,7 @@ The following data is returned in JSON format by the service.
 
 * sign_key: tx key; Type: String
 * sign_list: sign msg list; Type: String
+* ckb_tx: tx of transfer account; Type: String
 
 ## Edit Record
 
@@ -208,8 +213,12 @@ Content-type: application/json
 
 ```json
 {
+  "type": "blockchain",
+  "key_info": {
+    "coin_type": "309",
+    "key": "ckbxxx..."
+  },
   "account": "aaaaa.bit",
-  "ckb_addr": "",
   "raw_param": {
     "records": [
       {
@@ -229,8 +238,8 @@ Content-type: application/json
 
 The request accepts the following data in JSON format.
 
+* key_info: owner of account; Type: string; Required: Yes.
 * account: dotbit account; Type: string; Required: Yes.
-* ckb_addr: ckb address of the account`s owner; Type: string; Required: Yes.
 * raw_param: record list; Type: string; Required: Yes.
 
 **Response Syntax**
@@ -251,7 +260,8 @@ Content-type: application/json
         "sign_type": 5,
         "sign_msg": ""
       }
-    ]
+    ],
+    "ckb_tx": ""
   }
 }
 ```
@@ -263,6 +273,7 @@ The following data is returned in JSON format by the service.
 
 * sign_key: tx key; Type: String
 * sign_list: sign msg list; Type: String
+* ckb_tx: tx of edit record; Type: String
 
 ## Recycle
 
@@ -277,8 +288,12 @@ Content-type: application/json
 
 ```json
 {
+  "type": "blockchain",
+  "key_info": {
+    "coin_type": "309",
+    "key": "ckbxxx..."
+  },
   "account": "aaaaa.bit",
-  "outpoint": ""
 }
 ```
 
@@ -286,8 +301,8 @@ Content-type: application/json
 
 The request accepts the following data in JSON format.
 
+* key_info: owner of account; Type: string; Required: Yes.
 * account: dotbit account; Type: string; Required: Yes.
-* outpoint: outpoint of did cell; Type: string; Required: Yes.
 
 **Response Syntax**
 
@@ -307,7 +322,8 @@ Content-type: application/json
         "sign_type": 99,
         "sign_msg": ""
       }
-    ]
+    ],
+    "ckb_tx": ""
   }
 }
 ```
@@ -319,6 +335,7 @@ The following data is returned in JSON format by the service.
 
 * sign_key: tx key; Type: String
 * sign_list: sign msg list; Type: String
+* ckb_tx: tx of recycle account; Type: String
 
 ## Tx Send
 
@@ -339,7 +356,8 @@ Content-type: application/json
       "sign_type": 99,
       "sign_msg": ""
     }
-  ]
+  ],
+  "ckb_tx": ""
 }
 ```
 
@@ -349,6 +367,7 @@ The request accepts the following data in JSON format.
 
 * sign_key: tx key; Type: String
 * sign_list: sign list; Type: String
+* ckb_tx: signed transactions; Type: String
 
 **Response Syntax**
 
