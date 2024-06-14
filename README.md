@@ -7,6 +7,7 @@ transactions.
 * [Install &amp; Run](#install--run)
     * [Source Compile](#source-compile)
     * [Docker](#docker)
+    * [Apis](#apis)
 
 ## Prerequisites
 
@@ -56,3 +57,6 @@ _if you already have mysql,redis installed, just run_
 ```bash
 docker run -dp 9132:9132 -v $PWD/config/config.yaml:/app/config/config.yaml --name did-indexer-svr admindid/did-indexer-svr:latest
 ```
+
+### Apis
+More APIs see [API.md](https://github.com/dotbitHQ/did-cell-indexer/blob/main/API.md)
