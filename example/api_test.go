@@ -116,7 +116,7 @@ func TestEditOwner(t *testing.T) {
 
 func TestRecordList(t *testing.T) {
 	req := handle.ReqRecordList{
-		Account: "20230814.bit",
+		Account: "20230906-09.bit",
 	}
 	url := TestUrl + "/record/list"
 	var data handle.RespRecordList
@@ -133,7 +133,7 @@ func TestAccountList(t *testing.T) {
 			Type: "blockchain",
 			KeyInfo: core.KeyInfo{
 				CoinType: common.CoinTypeCKB,
-				Key:      "ckt1qyqrekdjpy72kvhp3e9uf6y5868w5hjg8qnsqt6a0m",
+				Key:      "ckt1qrejnmlar3r452tcg57gvq8patctcgy8acync0hxfnyka35ywafvkqgyumrp5k2es0d0hy5z6044zr2305pyzc97qqjec5vx",
 			},
 		},
 		Pagination: handle.Pagination{

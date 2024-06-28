@@ -54,10 +54,13 @@ func (d *DbDao) DidCellUpdateList(oldOutpointList []string, list []tables.TableD
 				return err
 			}
 		}
-		if err := tx.Where("account_id IN(?)", accountIds).
-			Delete(&tables.TableRecordsInfo{}).Error; err != nil {
-			return err
+		if len(accountIds) > 0 {
+			if err := tx.Where("account_id IN(?)", accountIds).
+				Delete(&tables.TableRecordsInfo{}).Error; err != nil {
+				return err
+			}
 		}
+
 		if len(records) > 0 {
 			if err := tx.Create(&records).Error; err != nil {
 				return err
