@@ -3,7 +3,7 @@ module did-cell-indexer
 go 1.18
 
 require (
-	github.com/dotbitHQ/das-lib v1.1.1-0.20240627013710-f431ecc619e8
+	github.com/dotbitHQ/das-lib v1.1.1-0.20240628101523-e702020d3308
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/gin-gonic/gin v1.8.1
@@ -27,6 +27,8 @@ require (
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0 // indirect
 	github.com/btcsuite/btclog v0.0.0-20170628155309-84c8d2346e9f // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
+	github.com/btcsuite/go-socks v0.0.0-20170105172521-4720035b7bfd // indirect
+	github.com/btcsuite/websocket v0.0.0-20150119174127-31079b680792 // indirect
 	github.com/clipperhouse/uax29 v1.12.4 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect

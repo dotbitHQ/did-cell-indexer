@@ -167,26 +167,29 @@ func (b *BlockParser) parsingBlockData(block *types.Block) error {
 		txHash := tx.Hash.Hex()
 		blockNumber := block.Header.Number
 		blockTimestamp := block.Header.Timestamp
-		if didCellAction, err := b.DasCore.TxToDidCellAction(tx); err != nil {
-			if err != core.ErrorNotExistDidCell {
-				log.Warn("TxToDidCellAction err :", didCellAction, blockNumber, txHash, err.Error())
-			}
-		} else {
-			if handle, ok := b.mapTransactionHandle[didCellAction]; ok {
-				// transaction parse by action
-				resp := handle(FuncTransactionHandleReq{
-					DbDao:          b.DbDao,
-					Tx:             tx,
-					TxHash:         txHash,
-					BlockNumber:    blockNumber,
-					BlockTimestamp: int64(blockTimestamp),
-					Action:         didCellAction,
-				})
-				if resp.Err != nil {
-					notify.SendLarkErrNotify(config.Cfg.Notify.LarkErrKey, "parsingBlockData", err.Error())
-					log.Error("action handle resp:", didCellAction, blockNumber, txHash, resp.Err.Error())
-					return resp.Err
-				}
+
+		action, res, err := b.DasCore.TxToDidCellEntityAndAction(tx)
+		if err != nil {
+			return fmt.Errorf("TxToDidCellEntityAndAction err: %s", err.Error())
+		}
+		if action == "" {
+			continue
+		}
+
+		if handle, ok := b.mapTransactionHandle[action]; ok {
+			resp := handle(FuncTransactionHandleReq{
+				DbDao:          b.DbDao,
+				Tx:             tx,
+				TxHash:         txHash,
+				BlockNumber:    blockNumber,
+				BlockTimestamp: int64(blockTimestamp),
+				Action:         action,
+				TxDidCellMap:   res,
+			})
+			if resp.Err != nil {
+				notify.SendLarkErrNotify(config.Cfg.Notify.LarkErrKey, "parsingBlockData", err.Error())
+				log.Error("action handle resp:", action, blockNumber, txHash, resp.Err.Error())
+				return resp.Err
 			}
 		}
 
