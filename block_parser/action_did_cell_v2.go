@@ -189,7 +189,7 @@ func (b *BlockParser) DidCellActionUpdate(req FuncTransactionHandleReq) (resp Fu
 				LockCodeHash:   v.Lock.CodeHash.Hex(),
 			})
 			accountIds = append(accountIds, accountId)
-			if w, yes := txDidEntityWitness.Outputs[v.Index]; yes {
+			if w, yes := txDidEntityWitness.Outputs[n.Index]; yes {
 				for _, r := range w.DidCellWitnessDataV0.Records {
 					records = append(records, tables.TableRecordsInfo{
 						AccountId: accountId,
@@ -241,7 +241,7 @@ func (b *BlockParser) DidCellActionRecycle(req FuncTransactionHandleReq) (resp F
 			return
 		}
 		tmpTx := tables.TableTxInfo{
-			Outpoint:       common.OutPoint2String(req.TxHash, v.OutPoint.Index),
+			Outpoint:       common.OutPoint2String(req.TxHash, uint(v.Index)),
 			BlockNumber:    req.BlockNumber,
 			BlockTimestamp: req.BlockTimestamp,
 			AccountId:      accountId,
