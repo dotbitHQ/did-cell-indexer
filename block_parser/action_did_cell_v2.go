@@ -241,7 +241,7 @@ func (b *BlockParser) DidCellActionRecycle(req FuncTransactionHandleReq) (resp F
 			return
 		}
 		tmpTx := tables.TableTxInfo{
-			Outpoint:       common.OutPointStruct2String(v.OutPoint),
+			Outpoint:       common.OutPoint2String(req.TxHash, v.OutPoint.Index),
 			BlockNumber:    req.BlockNumber,
 			BlockTimestamp: req.BlockTimestamp,
 			AccountId:      accountId,
