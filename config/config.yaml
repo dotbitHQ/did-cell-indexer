@@ -16,7 +16,7 @@ db:
 chain:
   ckb:
     node: "https://testnet.ckb.dev"
-    current_block_number: 13184725 # 13184725-testnet2, 13226009-mainnet
+    current_block_number: 13184725 # 13184725-testnet2, 13337722-mainnet
     confirm_num: 4
     concurrency_num: 100
 
