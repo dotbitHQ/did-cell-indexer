@@ -3,7 +3,7 @@ module did-cell-indexer
 go 1.18
 
 require (
-	github.com/dotbitHQ/das-lib v1.1.1-0.20240702022422-a10e4fc6b5e9
+	github.com/dotbitHQ/das-lib v1.1.1-0.20240704163030-cd031fd2920a
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/gin-gonic/gin v1.8.1
