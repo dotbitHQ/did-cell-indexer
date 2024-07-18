@@ -9,6 +9,8 @@ import (
 	"github.com/dotbitHQ/das-lib/http_api"
 	"github.com/dotbitHQ/das-lib/txbuilder"
 	"github.com/gin-gonic/gin"
+	"github.com/nervosnetwork/ckb-sdk-go/address"
+	"github.com/nervosnetwork/ckb-sdk-go/types"
 	"github.com/scorpiotzh/toolib"
 	"net/http"
 	"strings"
@@ -102,12 +104,23 @@ func (h *HttpHandle) doEditOwner(req *ReqEditOwner, apiResp *http_api.ApiResp) e
 		return nil
 	}
 
+	var normalCellScript *types.Script
+	if config.Cfg.Server.PayServerAddress != "" {
+		parseSvrAddr, err := address.Parse(config.Cfg.Server.PayServerAddress)
+		if err != nil {
+			apiResp.ApiRespErr(http_api.ApiCodeError500, err.Error())
+			return fmt.Errorf("address.Parse err: %s", err.Error())
+		}
+		normalCellScript = parseSvrAddr.Script
+	}
+
 	txParams, err := txbuilder.BuildDidCellTx(txbuilder.DidCellTxParams{
-		DasCore:         h.DasCore,
-		DasCache:        h.DasCache,
-		Action:          common.DidCellActionEditOwner,
-		DidCellOutPoint: acc.GetOutpoint(),
-		EditOwnerLock:   editOwnerLock,
+		DasCore:          h.DasCore,
+		DasCache:         h.DasCache,
+		Action:           common.DidCellActionEditOwner,
+		DidCellOutPoint:  acc.GetOutpoint(),
+		EditOwnerLock:    editOwnerLock,
+		NormalCellScript: normalCellScript,
 	})
 	if err != nil {
 		apiResp.ApiRespErr(http_api.ApiCodeError500, "Failed to build tx")
