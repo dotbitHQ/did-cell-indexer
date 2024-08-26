@@ -14,3 +14,9 @@ docker:
 
 docker-publish:
 	docker image push admindid/did-indexer-svr:latest
+
+docker-dev:
+	docker build --network host -t admindid/did-indexer-svr:dev .
+
+docker-publish-dev:
+	docker image push admindid/did-indexer-svr:dev
